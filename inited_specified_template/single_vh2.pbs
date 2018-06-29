@@ -1,0 +1,61 @@
+#!/bin/bash
+############################################################
+## 'man qsub' for additional information.
+############################################################
+
+#PBS -N UVH2+1
+#PBS -l nodes=1:ppn=12
+#PBS -l walltime=24:00:00
+#PBS -r n
+
+#PBS -o logdir/$PBS_JOBNAME.log
+#PBS -e logdir/$PBS_JOBNAME.err
+
+export NPROCS=`wc -l $PBS_NODEFILE | gawk '//{print $1}'`
+
+tinit=$(date +%s)
+
+### The following statements dump some diagnostic information to 
+### the batch job's standard output.
+date
+echo Job name: $PBS_JOBNAME
+echo Job ID:  $PBS_JOBID
+echo Master node `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo The node file is $PBS_NODEFILE
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job has allocated $NPROCS nodes
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+### Change to the working directory of the qsub command. 
+cd $PBS_O_WORKDIR
+
+### Sets the number of OpenMP threads to the number of requested processors 
+export OMP_NUM_THREADS=$PBS_NUM_PPN 
+
+### Generating transport coefficients
+./generate >> logdir/$PBS_JOBNAME.log
+
+### Generating initial energy densities
+./initE >> logdir/$PBS_JOBNAME.log
+
+### UVH2+1 executable, uses OpenMP and set processors
+./vh2-2.1 >> logdir/$PBS_JOBNAME.log
+stat=$?
+
+### Displays runtime
+runtime=$(($(date +%s)-$tinit))
+echo "$PBS_JOBNAME runtime: $runtime s = $(($runtime/60)) min"
+
+### Checking whether UVH2+1 succeeded and B3D should be run next
+if (( $stat == 3 ))
+then
+    echo "Aborting submission of B3D."
+elif (( $stat == 0 ))
+then
+    echo "Submitting B3D."
+    qsub single_b3d.pbs
+fi

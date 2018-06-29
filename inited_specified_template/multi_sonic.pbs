@@ -1,0 +1,109 @@
+#!/bin/bash
+############################################################
+## 'man qsub' for additional information.
+############################################################
+
+#PBS -l nodes=1:ppn=12
+#PBS -l walltime=24:00:00
+#PBS -r n
+#PBS -e $TMPDIR/$PBS_JOBNAME.err
+#PBS -o $TMPDIR/$PBS_JOBNAME.log
+
+export NPROCS=`wc -l $PBS_NODEFILE | gawk '//{print $1}'`
+
+### Start time
+tinit=$(date +%s)
+
+### Defines the current location, 'qsub' normally assumes to be in '/home/<user>'
+ROOTDIR=$PBS_O_WORKDIR
+### Defines the workdir for a single event with number $NUM
+PBS_O_WORKDIR=$ROOTDIR/$TMPDIR/${INPUTDIR}_$NUM
+
+### The following statements dump some diagnostic information to 
+### the batch job's standard output.
+date
+echo The job name is $PBS_JOBNAME
+echo The job ID is $PBS_JOBID
+echo The master node of this job is `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo The node file is $PBS_NODEFILE
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job has allocated $NPROCS nodes
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+### Log dir in the run dir for VH2, B3D, and B3D-Analyze output
+LOGDIR=logdir
+
+### Preparing run directory
+cp -r $ROOTDIR/$TEMPLATEDIR $PBS_O_WORKDIR
+sleep 2
+cp $ROOTDIR/$INPUTDIR/master.params $PBS_O_WORKDIR/data/params.txt
+cp $ROOTDIR/$INPUTDIR/master.trans $PBS_O_WORKDIR/input/transport_params.dat
+
+### Temporarily switching to run directory and creating initial conditions
+(cd $PBS_O_WORKDIR && ./initE) 
+sleep 2
+
+### Overwriting initial energy density profile, this must be executed after initial conditions are generated
+cp $ROOTDIR/$INPUTDIR/$INPUTFILE$NUM.dat $PBS_O_WORKDIR/input/inited.dat
+
+cd $PBS_O_WORKDIR
+
+### Generates transport parameters
+./generate
+
+### Wait for system, network, and HDDs to catch up
+sleep 2
+
+### Sets the number of OpenMP threads to the number of requested processors 
+export OMP_NUM_THREADS=$PBS_NUM_PPN 
+
+### Running the primary executable
+./vh2-2.1
+stat=$?
+#echo "$stat"
+
+if (( $stat == 3 ))
+then
+    ### UVH2+1 returns: "Error, encountered -nan"
+    echo "UVH2+1 failed for $INPUTDIR/$INPUTFILE$NUM.dat"  | tee -a ../../submission.log
+    echo "Aborting rest of SONIC, files stay in 'tmp'" | tee -a ../../submission.log
+
+elif (( $stat == 0 ))
+then
+    echo "UVH2+1 ran successfully."
+    echo "Running B3D."
+    ### Wait for system, network, and HDDs to catch up
+    sleep 2
+ 
+    ### Start B3D routine
+    ./b3d default
+    echo "B3D ran successfully."
+    echo "Running B3D-Analyze."
+  
+    ### Start analyze routine
+    ./analyze default
+    echo "SONIC is done."
+    echo "Copying results to $RESULTDIR"
+    cp analysis/default/cent0to5/details/*.dat data/results/ && \
+	cp -r data $RESULTDIR/data_$NUM && \
+	cp -r $LOGDIR $RESULTDIR/data_$NUM/ && \
+	cp input/inited.dat $RESULTDIR/data_$NUM/ && \
+	mv ../$PBS_JOBNAME.* $RESULTDIR/data_$NUM/$LOGDIR && \
+	sleep 2
+
+    if [[ $? -eq 0 ]]
+    then
+	rm -r $PBS_O_WORKDIR
+    else
+	echo "Copying results failed!"
+    fi
+    
+fi
+
+runtime=$(($(date +%s)-$tinit))
+echo "Runtime: $runtime s = $(($runtime/60)) min"
+mv ../$PBS_JOBNAME.* $LOGDIR/

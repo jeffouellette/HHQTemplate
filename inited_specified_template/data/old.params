@@ -1,0 +1,98 @@
+//initial conditions 
+IC		-2
+
+//COLLISION parameters
+RNUC		6.4
+ANUC		0.54
+SIGMANN		40
+
+
+//Atomic number of Nuclei (only symmetric collisions)
+TANORM		197
+
+
+// number of lattice sites
+NUMT		69
+
+//impact parameter 
+B		0
+
+// spatial lattice spacing in GeV^-1 
+AT		2.0
+
+// temporal lattice spacing 
+EPS		0.001
+
+//initial starting time in fm over c 
+TINIT		 0.5
+
+//initial starting temperature in GeV 
+TSTART		0.370
+
+// maximum # of steps to take 
+STEPS		40000
+
+// how many steps before recording measurables 
+UPDATE		250
+
+// how many steps before dumping all variables to file; "taking a snapshot" 
+SNAPUPDATE	500
+
+//freeze-out temperature 
+TF		0.17
+
+//coefficient -lambda2/(eta/tau_pi) -- 2 for weakly coupled plasma 
+L2COEF		0.0
+
+//freeze-out at T=TF -- 0 for isochronous, 1 for isothermal, 2 for blockwise isothermal 
+FREEZE		2
+
+//PT Array size 
+PTASIZE		25
+
+//PHI Arry size 
+PHIPASIZE	12
+
+//EoS file
+#EOSNAME				idEOS
+EOSNAME					qcdIEOS
+
+//eta/s file
+ETANAME					etaoverS-008
+
+//tau_pi/eta/2 file
+BETANAME				beta2-2
+
+//lambda1 file
+LAMBDANAME				lambda1-0
+
+
+//zeta/s file
+ZETANAME				zetaoverS-001
+
+
+//Max pt to calculate spectra 
+PTMAX	4.0
+
+//epsilon2
+BIEPS	0.00
+
+//pre-equilibrium flow (0=off,1=generate in initE, 2=generate in vh2)
+preeqflow 0
+
+//Scaling constant (scale inited.dat file by a constant)
+SCAL	  1.0
+
+FULL	1
+PCE	0
+MONOEPS	0.0
+
+//smoothing for lumpy conditions 0 = off
+SMOOTHING   0
+
+//smoothing cut-off energy density scale [GeV^4]
+SMOOTH   0.001
+
+//number of b3d events to calculate
+B3DEVENTS   50
+

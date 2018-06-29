@@ -1,0 +1,18 @@
+qualifier cent0to5
+double GLAUBER_B 2.326
+#qualifier cent5to10
+#double GLAUBER_B 4.029
+#qualifier cent10to15
+#double GLAUBER_B 5.202
+#qualifier cent15to20
+#double GLAUBER_B 6.155
+#qualifier cent0to10
+#double GLAUBER_B 3.29
+#qualifier cent10to20
+#double GLAUBER_B 5.70
+#qualifier cent20to30
+#double GLAUBER_B 7.36
+#qualifier cent30to40
+#double GLAUBER_B 8.70
+#qualifier cent40to50
+#double GLAUBER_B 9.87

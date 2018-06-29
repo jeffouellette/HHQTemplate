@@ -1,0 +1,45 @@
+#!/bin/bash
+############################################################
+## 'man qsub' for additional information.
+############################################################
+
+#PBS -N B3D-Analyze
+#PBS -l nodes=1:ppn=12
+#PBS -l walltime=24:00:00
+#PBS -r n
+
+#PBS -o logdir/$PBS_JOBNAME.log                                                                                                      #PBS -e logdir/$PBS_JOBNAME.err 
+
+export NPROCS=`wc -l $PBS_NODEFILE | gawk '//{print $1}'`
+
+tinit=$(date +%s)
+
+### The following statements dump some diagnostic information to 
+### the batch job's standard output.
+date
+echo Job name: $PBS_JOBNAME
+echo Job ID:  $PBS_JOBID
+echo Master node `hostname`
+echo The working directory is `echo $PBS_O_WORKDIR`
+echo The node file is $PBS_NODEFILE
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job runs on the following nodes:
+echo `cat $PBS_NODEFILE`
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+echo This job has allocated $NPROCS nodes
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+
+### Change to the working directory of the qsub command. 
+cd $PBS_O_WORKDIR
+
+### Sets the number of OpenMP threads to the number of requested processors 
+export OMP_NUM_THREADS=$PBS_NUM_PPN 
+
+### the full pathname as is done here. The last argument takes in the 'ppn' from above
+./analyze default
+
+### Displays runtime
+runtime=$(($(date +%s)-$tinit))
+echo "$PBS_JOBNAME runtime: $runtime s = $(($runtime/60)) min"
+echo "B3D-Analyze is done."
+echo "SONIC is done."

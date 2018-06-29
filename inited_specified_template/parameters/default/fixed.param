@@ -1,0 +1,34 @@
+###################
+bool B3D_PRHYDRO true
+double B3D_PR_OMEGA_XYSPACING 0.1973269602
+double B3D_PR_OMEGA_TAUSPACING 0.04933174005
+int B3D_PR_NPRCELLSMAX 10000000
+int B3D_NEVENTSMAX 20
+int B3D_NPARTSMAX 20000
+double HYDRO_FOTEMP 150.0
+int B3D_NACTIONSMAX 25000
+###################
+bool B3D_OSUHYDRO false
+double B3D_TAUCOLLMAX 50.0
+double B3D_ETAMAX 1.0
+double B3D_XYMAX 20.0
+int B3D_NETA 4
+int B3D_NXY 10
+int B3D_NSAMPLE 1
+string B3D_RESONANCES_DECAYS_FILE progdata/resinfo/decays_pdg.dat
+string B3D_RESONANCES_INFO_FILE progdata/resinfo/resonances_pdg.dat
+string B3D_INPUT_DATAROOT output
+string B3D_OUTPUT_DATAROOT output
+bool B3D_BJORKEN true
+bool B3D_ERROR_PRINT false
+double B3D_SIGMAMAX 30.0
+double B3D_SIGMADEFAULT 1.0
+bool B3D_BJMAKER_GAUSSIAN false
+bool B3D_BJMAKER_BALANCE false
+bool B3D_STAR_ACCEPTANCE false
+bool B3D_VIZWRITE false
+double B3D_SIGMAINELASTIC 0.0
+double B3D_INELASTIC_Q0 200
+bool B3D_INELASTIC false
+string B3D_INELASTIC_INFO_FILE inelastic.tmpdouble GLAUBER_PP_ENERGY_FRAC 1.0
+#######################
