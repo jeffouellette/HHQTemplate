@@ -43,7 +43,6 @@ do
   cd ./event$i
   cp -n /direct/phenix+u/jouellette/TGlauberMC/initedFiles_${sys}/event$i.dat ./input/inited.dat #TODO change me!!!
   cp -n /direct/phenix+u/jouellette/TGlauberMC/initedFiles_${sys}/event$i.root ./quarkdist.root #TODO change me!!!
-  cp -n /sphenix/user/jouellette/HHQTemplate/params.txt ./data/params.txt #TODO change me!!!
   cp -n /sphenix/user/jouellette/HHQTemplate/heavy_quark_pt.root ./ # if you have your own pT distribution, TODO change me too!!
   cd ../
   echo "" >> submit_events.job
