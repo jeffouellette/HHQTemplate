@@ -47,13 +47,10 @@ void diffusion(
 	       const int       NQuarks = 200000000, // 100000
 	       int             N_timesteps = 5000, // just give it larger than the 508 steps
 	       const TString   output_filename = "fout.root",
-         const double    etaOverS = 1,
 
-         const int       eventNum = 1, // parameterA is 3/2pi * etaOverS
+         const double    etaOverS = 1, // this is actually 4pi x shear viscosity (so etaOverS=1 <--> n/s=1/4pi)
 	       //double    parameterA = 3.0/(2.*pi), //  / TMath::TwoPi(), // A = DT
-	       // for reference, 3/2pi is equivalent to eta/s = 1/4pi
-	       // this parameter is overloaded for negative values to use the Dlookup
-	       // set parameterA to -1, -2, -3 for temperature dependent cases
+	       // for reference, 3/2pi is equivalent to n/s = 1/4pi
 
 	       const double    timeStepScale = 1.0,   // If > 1, skip timesteps, coasting in between. 
 	       const bool      usePythiaPt = true,   // option of PYTHIA input quark pT distribution
@@ -83,16 +80,10 @@ void diffusion(
   const double time_step_length            = 0.006; 
   const double time_step_length_inverseGeV = time_step_length * (1.0/0.1975);
   const double temperature_cutoff          = 0.1;
-  //double etaOverS                          = 1;
-  //switch ((int)eventNum/100) {
-  //  case 10: etaOverS = 0.5; break;
-  //  case 11: etaOverS = 1; break;
-  //  case 12: etaOverS = 2; break;
-  //  case 13: etaOverS = 3; break;
-  //  case 14: etaOverS = 4; break;
-  //  default: etaOverS = 0; break;
-  //}
+
   const double parameterA                  = etaOverS * 3.0/(2*pi);
+	// this parameter is overloaded for negative values to use the Dlookup
+	// set parameterA to -1, -2, -3 for temperature dependent cases
 
   cout << "DIFFUSION CODE RUNNING with parameter A = " << etaOverS << " x 3/2pi" << endl;
 
