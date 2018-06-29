@@ -44,11 +44,12 @@ void diffusion(
          const string    inNcollDistName = "hydro-b2.0fm.root", // input Ncoll distribution name
          const string    inHeavyQuarkPtSpectrumFileName = "heavy_quark_pt.root", // input c, b initial pT spectra file name
          const bool      yesbeauty = false, // only beauty, otherwise only charm
-	       const int       NQuarks = 100000,
+	       const int       NQuarks = 200000000, // 100000
 	       int             N_timesteps = 5000, // just give it larger than the 508 steps
 	       const TString   output_filename = "fout.root",
+         const double    etaOverS = 1,
 
-         const double    eventNum = 1, // parameterA is 3/2pi * etaOverS
+         const int       eventNum = 1, // parameterA is 3/2pi * etaOverS
 	       //double    parameterA = 3.0/(2.*pi), //  / TMath::TwoPi(), // A = DT
 	       // for reference, 3/2pi is equivalent to eta/s = 1/4pi
 	       // this parameter is overloaded for negative values to use the Dlookup
@@ -73,23 +74,24 @@ void diffusion(
 
   const double pi = TMath::Pi();
   const double ptMax = 15.0;
-  const int numPtBins = 75;
+  const int numPtBins = 150;
+  const int numPhiBins = 120;
 
   const double QuarkMass                   = (yesbeauty)? 4.20 : 1.27;
-  const int    NGridX                      = 201;   // #TODO of x and y grid cells
-  const int    NGridY                      = 201; 
+  const int    NGridX                      = 200;   // # of x and y grid cells
+  const int    NGridY                      = 200; 
   const double time_step_length            = 0.006; 
   const double time_step_length_inverseGeV = time_step_length * (1.0/0.1975);
   const double temperature_cutoff          = 0.1;
-  double etaOverS;
-  switch (eventNum/100) { //TODO change these cases
-    case 10: etaOverS = 0.5; break;
-    case 11: etaOverS = 1; break;
-    case 12: etaOverS = 2; break;
-    case 13: etaOverS = 3; break;
-    case 14: etaOverS = 4; break;
-    default: etaOverS = 0; break;
-  }
+  //double etaOverS                          = 1;
+  //switch ((int)eventNum/100) {
+  //  case 10: etaOverS = 0.5; break;
+  //  case 11: etaOverS = 1; break;
+  //  case 12: etaOverS = 2; break;
+  //  case 13: etaOverS = 3; break;
+  //  case 14: etaOverS = 4; break;
+  //  default: etaOverS = 0; break;
+  //}
   const double parameterA                  = etaOverS * 3.0/(2*pi);
 
   cout << "DIFFUSION CODE RUNNING with parameter A = " << etaOverS << " x 3/2pi" << endl;
@@ -187,8 +189,16 @@ void diffusion(
   TH2D *hheavyraa_radius1_7_particle = new TH2D("hheavyraa_radius1_7_particle","hheavyraa_radius1_7_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
   TH2D *hheavyraa_radius2_5_particle = new TH2D("hheavyraa_radius2_5_particle","hheavyraa_radius2_5_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
 
-  TH2D *hheavyptphiorig = new TH2D("hheavyptphiorig","hheavyptphiorig",numPtBins,0.0,ptMax,60,-pi,pi);
-  TH2D *hheavyptphi = new TH2D("hheavyptphi","hheavyptphi",numPtBins,0.0,ptMax,60,-pi,pi);
+  TH2D *hheavyptphiorig0_5 = new TH2D("hheavyptphiorig0_5","hheavyptphiorig0_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphi0_5 = new TH2D("hheavyptphi0_5","hheavyptphi0_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphiorig1_0 = new TH2D("hheavyptphiorig1_0","hheavyptphiorig1_0",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphi1_0 = new TH2D("hheavyptphi1_0","hheavyptphi1_0",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphiorig1_7 = new TH2D("hheavyptphiorig1_7","hheavyptphiorig1_7",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphi1_7 = new TH2D("hheavyptphi1_7","hheavyptphi1_7",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphiorig2_5 = new TH2D("hheavyptphiorig2_5","hheavyptphiorig2_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphi2_5 = new TH2D("hheavyptphi2_5","hheavyptphi2_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphiorig = new TH2D("hheavyptphiorig","hheavyptphiorig",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  TH2D *hheavyptphi = new TH2D("hheavyptphi","hheavyptphi",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
 
   TH1D *hdeltaphiorig = new TH1D("hdeltaphiorig","hdeltaphiorig",30,0.0,pi);
   TH1D *hdeltaphiorig1 = new TH1D("hdeltaphiorig1","hdeltaphiorig1",30,0.0,pi);
@@ -212,8 +222,8 @@ void diffusion(
   if (!onepanel) cc->Divide(3,1);
 
   for (int itime=0; itime<N_timesteps; itime++) {
-    hheavypt[itime]  = new TH1D(Form("h_heavypt_time_%03d", itime+1),Form("h_heavypt_time_%03d", itime+1),50,0.0,5.0);
-    hheavyraa[itime]  = new TH1D(Form("h_heavyraa_time_%03d", itime+1),Form("h_heavyraa_time_%03d", itime+1),50,0.0,5.0);
+    hheavypt[itime]  = new TH1D(Form("h_heavypt_time_%03d", itime+1),Form("h_heavypt_time_%03d", itime+1),numPtBins,0.0,ptMax);
+    hheavyraa[itime]  = new TH1D(Form("h_heavyraa_time_%03d", itime+1),Form("h_heavyraa_time_%03d", itime+1),numPtBins,0.0,ptMax);
   }
   // Read in hydro histograms: T, E density, beta, and pt.
   for (int itime=0; itime<N_timesteps; itime++) {
@@ -461,26 +471,47 @@ void diffusion(
     
       hheavypt[istep]->Fill(tquark->Pt());
       double radius_orig = sqrt(pow(qxstore,2)+pow(qystore,2));
+      double thisphi = tquark->Phi();
+      while (TMath::Abs(thisphi) > pi) {
+        if (thisphi > 0) thisphi = thisphi - 2*pi;
+        else if (thisphi < 0) thisphi = thisphi + 2*pi;
+      }
       if (istep == N_timesteps-1) {
 	      if (radius_orig > 0.0 && radius_orig < 0.5) {
           hheavypt_radius0_5->Fill(tquark->Pt());
           hheavyraa_radius0_5_particle->Fill(tquark->Pt(),tquark->Pt()/init_pt);
+          hheavyptphi0_5->Fill(tquark->Pt(), thisphi);
         } else if (radius_orig > 0.5 && radius_orig < 1.0) {
           hheavypt_radius1_0->Fill(tquark->Pt());
           hheavyraa_radius1_0_particle->Fill(tquark->Pt(),tquark->Pt()/init_pt);
+          hheavyptphi1_0->Fill(tquark->Pt(), thisphi);
         } else if (radius_orig > 1.0 && radius_orig < 1.7) {
           hheavypt_radius1_7->Fill(tquark->Pt());
           hheavyraa_radius1_7_particle->Fill(tquark->Pt(),tquark->Pt()/init_pt);
+          hheavyptphi1_7->Fill(tquark->Pt(), thisphi);
         } else if (radius_orig > 1.7 && radius_orig < 2.5) {
           hheavypt_radius2_5->Fill(tquark->Pt());
           hheavyraa_radius2_5_particle->Fill(tquark->Pt(),tquark->Pt()/init_pt);
+          hheavyptphi2_5->Fill(tquark->Pt(), thisphi);
         }
       } else if (istep == 0) {
         init_pt = tquark->Pt();
-	      if (radius_orig > 0.0 && radius_orig < 0.5) hheavypt_radius0_5_orig->Fill(tquark->Pt());
-	      else if (radius_orig > 0.5 && radius_orig < 1.0) hheavypt_radius1_0_orig->Fill(tquark->Pt());
-	      else if (radius_orig > 1.0 && radius_orig < 1.7) hheavypt_radius1_7_orig->Fill(tquark->Pt());
-	      else if (radius_orig > 1.7 && radius_orig < 2.5) hheavypt_radius2_5_orig->Fill(tquark->Pt());
+	      if (radius_orig > 0.0 && radius_orig < 0.5) {
+          hheavypt_radius0_5_orig->Fill(tquark->Pt());
+          hheavyptphiorig0_5->Fill(tquark->Pt(), thisphi);
+        }
+	      else if (radius_orig > 0.5 && radius_orig < 1.0) {
+          hheavypt_radius1_0_orig->Fill(tquark->Pt());
+          hheavyptphiorig1_0->Fill(tquark->Pt(), thisphi);
+        }
+	      else if (radius_orig > 1.0 && radius_orig < 1.7) {
+          hheavypt_radius1_7_orig->Fill(tquark->Pt());
+          hheavyptphiorig1_7->Fill(tquark->Pt(), thisphi);
+        }
+	      else if (radius_orig > 1.7 && radius_orig < 2.5) {
+          hheavypt_radius2_5_orig->Fill(tquark->Pt());
+          hheavyptphiorig2_5->Fill(tquark->Pt(), thisphi);
+        }
       }
       // update position of quark
       if (tquark->P() > 0) {
@@ -502,7 +533,13 @@ void diffusion(
       if (tquark->Pt() > 2.0 && qptfinalstore > 2.0) hdeltaphi2->Fill(deltaphi);
       if (tquark->Pt() > 3.0 && qptfinalstore > 3.0) hdeltaphi3->Fill(deltaphi);
     }
-    hheavyptphi->Fill(tquark->Pt(), tquark->Phi());
+
+    double thisphi = tquark->Phi();
+    while (TMath::Abs(thisphi) > pi) {
+      if (thisphi > 0) thisphi = thisphi - 2*pi;
+      else if (thisphi < 0) thisphi = thisphi + 2*pi;
+    }
+    hheavyptphi->Fill(tquark->Pt(), thisphi);
 
   } // end loop over quarks
 
@@ -704,6 +741,14 @@ void diffusion(
   hdeltaphi2->Write();
   hdeltaphi3->Write();
 
+  hheavyptphiorig0_5->Write();
+  hheavyptphi0_5->Write();
+  hheavyptphiorig1_0->Write();
+  hheavyptphi1_0->Write();
+  hheavyptphiorig1_7->Write();
+  hheavyptphi1_7->Write();
+  hheavyptphiorig2_5->Write();
+  hheavyptphi2_5->Write();
   hheavyptphiorig->Write();
   hheavyptphi->Write();
 
