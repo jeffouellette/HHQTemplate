@@ -74,17 +74,23 @@ void diffusion(
   gStyle->SetOptTitle(0);
 
   const double pi = TMath::Pi();
-  const double ptMax = 15.0;
-  const int numPtBins = 150;
+  const double ptMin = 0.0;
+  const double ptMax = 30.0;
+  const int numPtBins = 300;
   const int numPhiBins = 120;
+
+  const double radii[5] = {0, 0.5, 1.0, 1.7, 2.5};
 
   const double QuarkMass                   = (yesbeauty)? 4.20 : 1.27;
   const int    NGridX                      = 200;   // # of x and y grid cells
   const int    NGridY                      = 200; 
-  const double time_step_length            = 0.0050107;  // separation between snapshots is 0.001*100/5.0677 * 0.253927 fm/c
-  const double time_step_length_inverseGeV = time_step_length * (1.0/0.1975);
+  double time_step_length = 0.0071425; // timestep = (SNAPUPDATE * EPS * AT) / (5.0677 GeV^-1 / fm), e.g. here it is for 141 bins, xmax=5fm
+  double time_step_length_inverseGeV = time_step_length * (1.0/0.1975);
   const double temperature_cutoff          = 0.1;
   const double parameterA                  = etaOverS * 1.0/(4*pi);
+
+  const bool sampleRapidity                = false; // samples a near-central rapidity
+  const bool MomentumDependent             = true; // scales D with total momentum
 
   cout << "DIFFUSION CODE RUNNING with parameter A = " << etaOverS << " x 1/4pi" << endl;
 
@@ -132,8 +138,8 @@ void diffusion(
   //if (yesbeauty) quarkpt = static_cast <TH1D *> (fin1->Get("bottomPtSpectrum"));
   //else quarkpt = static_cast <TH1D *> (fin1->Get("charmPtSpectrum"));
   // For root 5 use this:
-  if (yesbeauty) quarkpt = (TH1F*)(fin1->Get("bottomPtSpectrum"));
-  else quarkpt = (TH1F*)(fin1->Get("charmPtSpectrum"));
+  if (yesbeauty) quarkpt = (TH1F*)(fin1->Get("bottomPtSpectrum_boosted"));
+  else quarkpt = (TH1F*)(fin1->Get("charmPtSpectrum_boosted"));
 
   // Alternative to using TH1s from heavy_quark_pt.root
   TF1* ptc = new TF1("ptc", "[0]*x*TMath::Power(x*x + pow([1],2), [2])", 0., 20.);
@@ -151,67 +157,71 @@ void diffusion(
   const int numhists = N_timesteps+1;
   TH2D *htemperature[numhists];
   //TH2D *henergydensity[numhists];
-  TH2D *hbetax[numhists];
-  TH2D *hbetay[numhists];
-  TH1D *hheavypt[numhists];
-  TH1D *hheavyraa[numhists];
+  TH2D* hbetax[numhists];
+  TH2D* hbetay[numhists];
 
-  TH1D *hheavypt_radius0_5 = new TH1D("hheavypt_radius0_5","hheavypt_radius0_5",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius1_0 = new TH1D("hheavypt_radius1_0","hheavypt_radius1_0",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius1_7 = new TH1D("hheavypt_radius1_7","hheavypt_radius1_7",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius2_5 = new TH1D("hheavypt_radius2_5","hheavypt_radius2_5",numPtBins,0.0,ptMax);
+  TH1D* hheavypt[numhists][5];
+  TH1D* hheavyraa[numhists][5];
+  TH2D* hheavyptphi[numhists][5];
+  TH2D* hheavyraa_particle[5];
+  TH2D* hheavydpt_particle[5];
 
-  TH1D *hheavyraa_radius0_5 = new TH1D("hheavyraa_radius0_5","hheavyraa_radius0_5",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius1_0 = new TH1D("hheavyraa_radius1_0","hheavyraa_radius1_0",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius1_7 = new TH1D("hheavyraa_radius1_7","hheavyraa_radius1_7",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius2_5 = new TH1D("hheavyraa_radius2_5","hheavyraa_radius2_5",numPtBins,0.0,ptMax);
+  //TH1D* hheavypt_radius0_5 = new TH1D("hheavypt_radius0_5","hheavypt_radius0_5",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius1_0 = new TH1D("hheavypt_radius1_0","hheavypt_radius1_0",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius1_7 = new TH1D("hheavypt_radius1_7","hheavypt_radius1_7",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius2_5 = new TH1D("hheavypt_radius2_5","hheavypt_radius2_5",numPtBins,ptMin,ptMax);
 
-  TH1D *hheavypt_radius0_5_orig = new TH1D("hheavypt_radius0_5_orig","hheavypt_radius0_5_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius1_0_orig = new TH1D("hheavypt_radius1_0_orig","hheavypt_radius1_0_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius1_7_orig = new TH1D("hheavypt_radius1_7_orig","hheavypt_radius1_7_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavypt_radius2_5_orig = new TH1D("hheavypt_radius2_5_orig","hheavypt_radius2_5_orig",numPtBins,0.0,ptMax);
+  //TH1D* hheavyraa_radius0_5 = new TH1D("hheavyraa_radius0_5","hheavyraa_radius0_5",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius1_0 = new TH1D("hheavyraa_radius1_0","hheavyraa_radius1_0",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius1_7 = new TH1D("hheavyraa_radius1_7","hheavyraa_radius1_7",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius2_5 = new TH1D("hheavyraa_radius2_5","hheavyraa_radius2_5",numPtBins,ptMin,ptMax);
 
-  TH1D *hheavyraa_radius0_5_orig = new TH1D("hheavyraa_radius0_5_orig","hheavyraa_radius0_5_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius1_0_orig = new TH1D("hheavyraa_radius1_0_orig","hheavyraa_radius1_0_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius1_7_orig = new TH1D("hheavyraa_radius1_7_orig","hheavyraa_radius1_7_orig",numPtBins,0.0,ptMax);
-  TH1D *hheavyraa_radius2_5_orig = new TH1D("hheavyraa_radius2_5_orig","hheavyraa_radius2_5_orig",numPtBins,0.0,ptMax);
+  //TH1D* hheavypt_radius0_5_orig = new TH1D("hheavypt_radius0_5_orig","hheavypt_radius0_5_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius1_0_orig = new TH1D("hheavypt_radius1_0_orig","hheavypt_radius1_0_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius1_7_orig = new TH1D("hheavypt_radius1_7_orig","hheavypt_radius1_7_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavypt_radius2_5_orig = new TH1D("hheavypt_radius2_5_orig","hheavypt_radius2_5_orig",numPtBins,ptMin,ptMax);
 
-  TH2D *hheavyraa_particle = new TH2D("hheavyraa_particle","hheavyraa_particle",numPtbins,0.0,ptMax,100,0.0,5.0);
-  TH2D *hheavyraa_radius0_5_particle = new TH2D("hheavyraa_radius0_5_particle","hheavyraa_radius0_5_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
-  TH2D *hheavyraa_radius1_0_particle = new TH2D("hheavyraa_radius1_0_particle","hheavyraa_radius1_0_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
-  TH2D *hheavyraa_radius1_7_particle = new TH2D("hheavyraa_radius1_7_particle","hheavyraa_radius1_7_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
-  TH2D *hheavyraa_radius2_5_particle = new TH2D("hheavyraa_radius2_5_particle","hheavyraa_radius2_5_particle",numPtBins,0.0,ptMax,100,0.0,5.0);
+  //TH1D* hheavyraa_radius0_5_orig = new TH1D("hheavyraa_radius0_5_orig","hheavyraa_radius0_5_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius1_0_orig = new TH1D("hheavyraa_radius1_0_orig","hheavyraa_radius1_0_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius1_7_orig = new TH1D("hheavyraa_radius1_7_orig","hheavyraa_radius1_7_orig",numPtBins,ptMin,ptMax);
+  //TH1D* hheavyraa_radius2_5_orig = new TH1D("hheavyraa_radius2_5_orig","hheavyraa_radius2_5_orig",numPtBins,ptMin,ptMax);
 
-  TH2D *hheavydpt_particle = new TH2D("hheavydpt_particle","hheavydpt_particle",numPtbins,0.0,ptMax,2*numPtbins,-ptMax,ptMax);
-  TH2D *hheavydpt_radius0_5_particle = new TH2D("hheavydpt_radius0_5_particle","hheavydpt_radius0_5_particle",numPtBins,0.0,ptMax,2*numPtbins,-ptMax,ptMax);
-  TH2D *hheavydpt_radius1_0_particle = new TH2D("hheavydpt_radius1_0_particle","hheavydpt_radius1_0_particle",numPtBins,0.0,ptMax,2*numPtbins,-ptMax,ptMax);
-  TH2D *hheavydpt_radius1_7_particle = new TH2D("hheavydpt_radius1_7_particle","hheavydpt_radius1_7_particle",numPtBins,0.0,ptMax,2*numPtbins,-ptMax,ptMax);
-  TH2D *hheavydpt_radius2_5_particle = new TH2D("hheavydpt_radius2_5_particle","hheavydpt_radius2_5_particle",numPtBins,0.0,ptMax,2*numPtbins,-ptMax,ptMax);
+  //TH2D* hheavyraa_particle = new TH2D("hheavyraa_particle","hheavyraa_particle",numPtBins,ptMin,ptMax,200,0.0,10.0);
+  //TH2D* hheavyraa_radius0_5_particle = new TH2D("hheavyraa_radius0_5_particle","hheavyraa_radius0_5_particle",numPtBins,ptMin,ptMax,200,0.0,10.0);
+  //TH2D* hheavyraa_radius1_0_particle = new TH2D("hheavyraa_radius1_0_particle","hheavyraa_radius1_0_particle",numPtBins,ptMin,ptMax,200,0.0,10.0);
+  //TH2D* hheavyraa_radius1_7_particle = new TH2D("hheavyraa_radius1_7_particle","hheavyraa_radius1_7_particle",numPtBins,ptMin,ptMax,200,0.0,10.0);
+  //TH2D* hheavyraa_radius2_5_particle = new TH2D("hheavyraa_radius2_5_particle","hheavyraa_radius2_5_particle",numPtBins,ptMin,ptMax,200,0.0,10.0);
 
-  TH2D *hheavyptphiorig0_5 = new TH2D("hheavyptphiorig0_5","hheavyptphiorig0_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphi0_5 = new TH2D("hheavyptphi0_5","hheavyptphi0_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphiorig1_0 = new TH2D("hheavyptphiorig1_0","hheavyptphiorig1_0",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphi1_0 = new TH2D("hheavyptphi1_0","hheavyptphi1_0",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphiorig1_7 = new TH2D("hheavyptphiorig1_7","hheavyptphiorig1_7",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphi1_7 = new TH2D("hheavyptphi1_7","hheavyptphi1_7",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphiorig2_5 = new TH2D("hheavyptphiorig2_5","hheavyptphiorig2_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphi2_5 = new TH2D("hheavyptphi2_5","hheavyptphi2_5",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphiorig = new TH2D("hheavyptphiorig","hheavyptphiorig",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
-  TH2D *hheavyptphi = new TH2D("hheavyptphi","hheavyptphi",numPtBins,0.0,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavydpt_particle = new TH2D("hheavydpt_particle","hheavydpt_particle",numPtBins,ptMin,ptMax,2*numPtBins,-ptMax,ptMax);
+  //TH2D* hheavydpt_radius0_5_particle = new TH2D("hheavydpt_radius0_5_particle","hheavydpt_radius0_5_particle",numPtBins,ptMin,ptMax,2*numPtBins,-ptMax,ptMax);
+  //TH2D* hheavydpt_radius1_0_particle = new TH2D("hheavydpt_radius1_0_particle","hheavydpt_radius1_0_particle",numPtBins,ptMin,ptMax,2*numPtBins,-ptMax,ptMax);
+  //TH2D* hheavydpt_radius1_7_particle = new TH2D("hheavydpt_radius1_7_particle","hheavydpt_radius1_7_particle",numPtBins,ptMin,ptMax,2*numPtBins,-ptMax,ptMax);
+  //TH2D* hheavydpt_radius2_5_particle = new TH2D("hheavydpt_radius2_5_particle","hheavydpt_radius2_5_particle",numPtBins,ptMin,ptMax,2*numPtBins,-ptMax,ptMax);
 
-  TH1D *hdeltaphiorig = new TH1D("hdeltaphiorig","hdeltaphiorig",30,0.0,pi);
-  TH1D *hdeltaphiorig1 = new TH1D("hdeltaphiorig1","hdeltaphiorig1",30,0.0,pi);
-  TH1D *hdeltaphiorig2 = new TH1D("hdeltaphiorig2","hdeltaphiorig2",30,0.0,pi);
-  TH1D *hdeltaphiorig3 = new TH1D("hdeltaphiorig3","hdeltaphiorig3",30,0.0,pi);
-  TH1D *hdeltaphi = new TH1D("hdeltaphi","hdeltaphi",30,0.0,pi);
+  //TH2D* hheavyptphiorig0_5 = new TH2D("hheavyptphiorig0_5","hheavyptphiorig0_5",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphi0_5 = new TH2D("hheavyptphi0_5","hheavyptphi0_5",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphiorig1_0 = new TH2D("hheavyptphiorig1_0","hheavyptphiorig1_0",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphi1_0 = new TH2D("hheavyptphi1_0","hheavyptphi1_0",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphiorig1_7 = new TH2D("hheavyptphiorig1_7","hheavyptphiorig1_7",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphi1_7 = new TH2D("hheavyptphi1_7","hheavyptphi1_7",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphiorig2_5 = new TH2D("hheavyptphiorig2_5","hheavyptphiorig2_5",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphi2_5 = new TH2D("hheavyptphi2_5","hheavyptphi2_5",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphiorig = new TH2D("hheavyptphiorig","hheavyptphiorig",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+  //TH2D* hheavyptphi = new TH2D("hheavyptphi","hheavyptphi",numPtBins,ptMin,ptMax,numPhiBins,-pi,pi);
+
+  TH1D* hdeltaphiorig = new TH1D("hdeltaphiorig","hdeltaphiorig",30,0.0,pi);
+  TH1D* hdeltaphiorig1 = new TH1D("hdeltaphiorig1","hdeltaphiorig1",30,0.0,pi);
+  TH1D* hdeltaphiorig2 = new TH1D("hdeltaphiorig2","hdeltaphiorig2",30,0.0,pi);
+  TH1D* hdeltaphiorig3 = new TH1D("hdeltaphiorig3","hdeltaphiorig3",30,0.0,pi);
+  TH1D* hdeltaphi = new TH1D("hdeltaphi","hdeltaphi",30,0.0,pi);
   hdeltaphi->SetXTitle("charm-anticharm #Delta #phi (rad)");
-  TH1D *hdeltaphi1 = new TH1D("hdeltaphi1","hdeltaphi1",30,0.0,pi);
-  TH1D *hdeltaphi2 = new TH1D("hdeltaphi2","hdeltaphi2",30,0.0,pi);
-  TH1D *hdeltaphi3 = new TH1D("hdeltaphi3","hdeltaphi3",30,0.0,pi);
+  TH1D* hdeltaphi1 = new TH1D("hdeltaphi1","hdeltaphi1",30,0.0,pi);
+  TH1D* hdeltaphi2 = new TH1D("hdeltaphi2","hdeltaphi2",30,0.0,pi);
+  TH1D* hdeltaphi3 = new TH1D("hdeltaphi3","hdeltaphi3",30,0.0,pi);
 
-  TLorentzVector *tquark = new TLorentzVector();
-  TLorentzVector *tquark1 = new TLorentzVector();
-  TLorentzVector *tquark2 = new TLorentzVector();
+  TLorentzVector* tquark = new TLorentzVector();
+  TLorentzVector* tquark1 = new TLorentzVector();
+  TLorentzVector* tquark2 = new TLorentzVector();
   TLatex ltx, ltxn;  ltxn.SetNDC();
   TObjArray* boosts[numhists]; // TArrow* arrays
   TRandom3 ran(0);                  // 0 means new seed every run
@@ -266,18 +276,29 @@ void diffusion(
   } // end loop over timesteps
   cout << endl;
 
-  for (int itime=0; itime<N_timesteps; itime++) {
-    if (plotThings || itime == 0 || itime == N_timesteps-1) {
-      hheavypt[itime]  = new TH1D(Form("h_heavypt_time_%03d", itime+1),Form("h_heavypt_time_%03d", itime+1),numPtBins,0.0,ptMax);
-      hheavyraa[itime]  = new TH1D(Form("h_heavyraa_time_%03d", itime+1),Form("h_heavyraa_time_%03d", itime+1),numPtBins,0.0,ptMax);
+  //for (int itime=0; itime<N_timesteps; itime++) {
+  //  if (plotThings || itime == 0 || itime == N_timesteps-1) {
+  //    hheavypt[itime]  = new TH1D(Form("h_heavypt_time_%03d", itime+1),Form("h_heavypt_time_%03d", itime+1),numPtBins,ptMin,ptMax);
+  //    hheavyraa[itime]  = new TH1D(Form("h_heavyraa_time_%03d", itime+1),Form("h_heavyraa_time_%03d", itime+1),numPtBins,ptMin,ptMax);
+  //  }
+  //}
+  for (int ir = 0; ir < 5; ir++) {
+    for (int itime = 0; itime <= N_timesteps; itime++) { // inclusive with N_timesteps to get endpoints of interval
+      if (plotThings || itime==0 || itime == N_timesteps) {
+        hheavypt[itime][ir] = new TH1D (Form ("hheavypt_itime%i_radius%i_%i", itime, ir, ir+1), "", numPtBins, ptMin, ptMax);
+        hheavyraa[itime][ir] = new TH1D (Form ("hheavyraa_itime%i_radius%i_%i", itime, ir, ir+1), "", numPtBins, ptMin, ptMax);
+        hheavyptphi[itime][ir] = new TH2D (Form ("hheavyptphi_itime%i_radius%i_%i", itime, ir, ir+1), "", numPtBins, ptMin, ptMax, numPhiBins, -pi, pi);
+      }
     }
+    hheavyraa_particle[ir] = new TH2D (Form ("hheavyraa_particle_radius%i_%i", ir, ir+1), "", numPtBins, ptMin, ptMax, 200, 0.0, 10.0);
+    hheavydpt_particle[ir] = new TH2D (Form ("hheavydpt_particle_radius%i_%i", ir, ir+1), "", numPtBins, ptMin, ptMax, 200, 0.0, 10.0);
   }
 
   //--------------------------------------------------------------------------------------
   // NOW STEP QUARKS THROUGH THE TIME EVOLUTION
   //--------------------------------------------------------------------------------------
 
-  TH1D *hheavypt_orig = new TH1D("hheavypt_orig","hheavypt_orig", 50, 0.0, 5.0);
+  TH1D *hheavypt_orig = new TH1D("hheavypt_orig","hheavypt_orig", numPtBins, ptMin, ptMax);
 
   // for drawing some example quarks moving around - put in double array of TGraphs
   const int npoints = N_timesteps;
@@ -323,7 +344,7 @@ void diffusion(
     // start with quark initial information
     // in odd numbered events, calculate both momentum for charm and anti-charm
     // and then use the anti-charm for the even numbered event.
-    double qpt, qphi, qx, qy;
+    double qpt, qphi, qx, qy, qrapidity, qpz;
     if (iquark%2!=0) {
 
       qx = 0.0; 
@@ -337,8 +358,13 @@ void diffusion(
       else if (yesbeauty) qpt = ptb->GetRandom();
       else qpt = ptc->GetRandom();
 
-      tquark1->SetPxPyPzE( cos(qphi)*qpt, sin(qphi)*qpt , 0.0, sqrt(QuarkMass*QuarkMass + qpt*qpt));
-      tquark2->SetPxPyPzE( cos(qphi+TMath::Pi())*qpt, sin(qphi+TMath::Pi())*qpt , 0.0, sqrt(QuarkMass*QuarkMass + qpt*qpt));
+      if (sampleRapidity) qrapidity = ran.Uniform(-0.25, 0.25);
+      else qrapidity = 0;
+
+      qpz = sqrt(QuarkMass*QuarkMass + qpt*qpt) * sinh (qrapidity);
+
+      tquark1->SetPxPyPzE( cos(qphi)*qpt, sin(qphi)*qpt , qpz, sqrt(QuarkMass*QuarkMass + qpt*qpt + qpz*qpz));
+      tquark2->SetPxPyPzE( cos(qphi+TMath::Pi())*qpt, sin(qphi+TMath::Pi())*qpt , qpz, sqrt(QuarkMass*QuarkMass + qpt*qpt + qpz*qpz));
 
       // CONSIDER OPTION OF A KT KICK (SO NOT BACK TO BACK)
       // 1.  RANDOMLY SELECT A KT KICK FROM A GAUSSIAN with sigma = 1 GeV (for example)
@@ -390,14 +416,18 @@ void diffusion(
 
     // fill initial value for pT distribution into time step 0
     //----- j.nagle - 12/26/2013 - a little awkward here since kt already included in the original --> NEED TO REMOVE
-    hheavypt_orig->Fill(qpt);
+    //hheavypt_orig->Fill(qpt);
 
-    hheavyptphiorig->Fill(qpt, qphi);
+    //hheavyptphiorig->Fill(qpt, qphi);
 
-    double init_pt;
+    const double radius = sqrt (pow(qx,2) + pow(qy,2));
+    short ir = 0;
+    while (ir < 5 && radii[ir] < radius) ir++;
+
+    const double init_pt = tquark->Pt(); // pt, phi at the beginning of the time evolution
+    const double init_phi = tquark->Phi(); // returns between -pi and pi
     // now loop over time steps for diffusion
     for (int istep=0; istep < N_timesteps; istep++) {
-
 
       if (istep % (int) timeStepScale) continue;
 
@@ -436,16 +466,15 @@ void diffusion(
 
 	      // if we wanted a momentum dependence to D - take arXiv 1005.0769v1 Figure 20 Riek,Rapp
 	      // posit a 0.5 drop in coupling strength in going from 0 GeV to 5 GeV (simple linear for now)
-	      bool MomentumDependent = true;
 	      if (MomentumDependent) {
-	        // D parameter should be increasing with larger pT (i.e. weaker coupling)
+	        // D parameter should be increasing with larger momentum (i.e. weaker coupling)
 	        double scaleValue = 1.0 + 2.0*(tquark->P()/10.0); //  at P=0, sV=1; at P=5, sV = 2.0
 	        Dparameter = Dparameter * scaleValue;
 	      }
 
-	      double px_kick = ran.Gaus()*sqrt(time_step_length_inverseGeV * 2.0 * pow(local_temp,2) / Dparameter);
-	      double py_kick = ran.Gaus()*sqrt(time_step_length_inverseGeV * 2.0 * pow(local_temp,2) / Dparameter);
-	      double pz_kick = ran.Gaus()*sqrt(time_step_length_inverseGeV * 2.0 * pow(local_temp,2) / Dparameter);
+	      double px_kick = ran.Gaus(0, sqrt(2.0 * pow(local_temp,2) / (Dparameter * time_step_length_inverseGeV))) * time_step_length_inverseGeV;
+	      double py_kick = ran.Gaus(0, sqrt(2.0 * pow(local_temp,2) / (Dparameter * time_step_length_inverseGeV))) * time_step_length_inverseGeV;
+	      double pz_kick = ran.Gaus(0, sqrt(2.0 * pow(local_temp,2) / (Dparameter * time_step_length_inverseGeV))) * time_step_length_inverseGeV;
 
 	      // could rotate and have a different kappa in and out of direction of motion...
 	      
@@ -478,58 +507,37 @@ void diffusion(
 	      tquark->Boost(+local_betax, +local_betay, 0.0);
 	  
       } // even if below temperature cutoff still fill and just linearly propagate
-   
-      if (plotThings || istep == 0 || istep == N_timesteps-1)
-        hheavypt[istep]->Fill(tquark->Pt());
-      double radius_orig = sqrt(pow(qxstore,2)+pow(qystore,2));
-      double thisphi = tquark->Phi();
-      while (TMath::Abs(thisphi) > pi) {
-        if (thisphi > 0) thisphi = thisphi - 2*pi;
-        else if (thisphi < 0) thisphi = thisphi + 2*pi;
+
+      if (istep == 0) {
+        hheavyptphi[0][0]->Fill (init_pt, init_phi);
+        hheavypt[0][0]->Fill (init_pt);
+
+        if (0 <= ir && ir < 4) {
+          hheavyptphi[0][ir]->Fill (init_pt, init_phi);
+          hheavypt[0][ir]->Fill (init_pt);
+        }
+
       }
-      if (istep == N_timesteps-1) {
-        hheavyraa_particle->Fill(init_pt,tquark->Pt()/init_pt);
-        hheavydpt_particle->Fill(init_pt,tquark->Pt()-init_pt);
-	      if (radius_orig > 0.0 && radius_orig < 0.5) {
-          hheavypt_radius0_5->Fill(tquark->Pt());
-          hheavyraa_radius0_5_particle->Fill(init_pt,tquark->Pt()/init_pt);
-          hheavydpt_radius0_5_particle->Fill(init_pt,tquark->Pt()-init_pt);
-          hheavyptphi0_5->Fill(tquark->Pt(), thisphi);
-        } else if (radius_orig > 0.5 && radius_orig < 1.0) {
-          hheavypt_radius1_0->Fill(tquark->Pt());
-          hheavyraa_radius1_0_particle->Fill(init_pt,tquark->Pt()/init_pt);
-          hheavydpt_radius1_0_particle->Fill(init_pt,tquark->Pt()-init_pt);
-          hheavyptphi1_0->Fill(tquark->Pt(), thisphi);
-        } else if (radius_orig > 1.0 && radius_orig < 1.7) {
-          hheavypt_radius1_7->Fill(tquark->Pt());
-          hheavyraa_radius1_7_particle->Fill(init_pt,tquark->Pt()/init_pt);
-          hheavydpt_radius1_7_particle->Fill(init_pt,tquark->Pt()-init_pt);
-          hheavyptphi1_7->Fill(tquark->Pt(), thisphi);
-        } else if (radius_orig > 1.7 && radius_orig < 2.5) {
-          hheavypt_radius2_5->Fill(tquark->Pt());
-          hheavyraa_radius2_5_particle->Fill(init_pt,tquark->Pt()/init_pt);
-          hheavydpt_radius2_5_particle->Fill(init_pt,tquark->Pt()-init_pt);
-          hheavyptphi2_5->Fill(tquark->Pt(), thisphi);
-        }
-      } else if (istep == 0) {
-        init_pt = tquark->Pt();
-	      if (radius_orig > 0.0 && radius_orig < 0.5) {
-          hheavypt_radius0_5_orig->Fill(tquark->Pt());
-          hheavyptphiorig0_5->Fill(tquark->Pt(), thisphi);
-        }
-	      else if (radius_orig > 0.5 && radius_orig < 1.0) {
-          hheavypt_radius1_0_orig->Fill(tquark->Pt());
-          hheavyptphiorig1_0->Fill(tquark->Pt(), thisphi);
-        }
-	      else if (radius_orig > 1.0 && radius_orig < 1.7) {
-          hheavypt_radius1_7_orig->Fill(tquark->Pt());
-          hheavyptphiorig1_7->Fill(tquark->Pt(), thisphi);
-        }
-	      else if (radius_orig > 1.7 && radius_orig < 2.5) {
-          hheavypt_radius2_5_orig->Fill(tquark->Pt());
-          hheavyptphiorig2_5->Fill(tquark->Pt(), thisphi);
+      if (plotThings || istep == N_timesteps-1) {
+        hheavyptphi[istep+1][0]->Fill (tquark->Pt(), tquark->Phi()); // fill kinematics at the end of this time step
+        hheavypt[istep+1][0]->Fill (tquark->Pt());
+
+        if (0 <= ir && ir < 4) {
+          hheavyptphi[istep+1][ir]->Fill (tquark->Pt(), tquark->Phi());
+          hheavypt[istep+1][ir]->Fill (tquark->Pt());
         }
       }
+
+      if (istep == N_timesteps-1) { // only fill these plots at the last timestep
+        hheavyraa_particle[0]->Fill(init_pt, tquark->Pt()/init_pt);
+        hheavydpt_particle[0]->Fill(init_pt, tquark->Pt()-init_pt);
+
+        if (0 <= ir && ir < 4) {
+          hheavyraa_particle[ir]->Fill(init_pt, tquark->Pt()/init_pt);
+          hheavydpt_particle[ir]->Fill(init_pt, tquark->Pt()-init_pt);
+        }
+      }
+
       // update position of quark
       if (tquark->P() > 0) {
 	      qx = qx + (tquark->Px()/tquark->E())* time_step_length;
@@ -551,13 +559,6 @@ void diffusion(
       if (tquark->Pt() > 3.0 && qptfinalstore > 3.0) hdeltaphi3->Fill(deltaphi);
     }
 
-    double thisphi = tquark->Phi();
-    while (TMath::Abs(thisphi) > pi) {
-      if (thisphi > 0) thisphi -= 2*pi;
-      else if (thisphi < 0) thisphi += 2*pi;
-    }
-    hheavyptphi->Fill(tquark->Pt(), thisphi);
-
   } // end loop over quarks
 
   //=================================================================================
@@ -565,17 +566,20 @@ void diffusion(
   for (int ibin=1;ibin<=50;ibin++) {
     if (hheavypt_orig->GetBinContent(ibin) > 0) {
       double scale = 1.0;
-      scale = hheavypt_radius0_5->Integral()/(hheavypt_radius0_5->Integral()+hheavypt_radius1_0->Integral()+hheavypt_radius1_7->Integral()+hheavypt_radius2_5->Integral()); // fraction of quarks insie this radius
-      hheavyraa_radius0_5->SetBinContent(ibin, hheavypt_radius0_5->GetBinContent(ibin) / (scale*hheavypt_orig->GetBinContent(ibin)));
 
-      scale = hheavypt_radius1_0->Integral()/(hheavypt_radius0_5->Integral()+hheavypt_radius1_0->Integral()+hheavypt_radius1_7->Integral()+hheavypt_radius2_5->Integral());
-      hheavyraa_radius1_0->SetBinContent(ibin, hheavypt_radius1_0->GetBinContent(ibin) / (scale*hheavypt_orig->GetBinContent(ibin)));
+      double denom = 0;
+      for (short ir = 1; ir < 5; ir++) {
+        denom += hheavypt[N_timesteps-1][ir]->Integral();
+      }
 
-      scale = hheavypt_radius1_7->Integral()/(hheavypt_radius0_5->Integral()+hheavypt_radius1_0->Integral()+hheavypt_radius1_7->Integral()+hheavypt_radius2_5->Integral());
-      hheavyraa_radius1_7->SetBinContent(ibin, hheavypt_radius1_7->GetBinContent(ibin) / (scale*hheavypt_orig->GetBinContent(ibin)));
-
-      scale = hheavypt_radius2_5->Integral()/(hheavypt_radius0_5->Integral()+hheavypt_radius1_0->Integral()+hheavypt_radius1_7->Integral()+hheavypt_radius2_5->Integral());
-      hheavyraa_radius2_5->SetBinContent(ibin, hheavypt_radius2_5->GetBinContent(ibin) / (scale*hheavypt_orig->GetBinContent(ibin)));
+      for (short istep = 0; istep <= N_timesteps; istep++) {
+        if (plotThings || istep == N_timesteps) {
+          for (short ir = 1; ir < 5; ir++) {
+            scale = hheavypt[istep][ir]->Integral()/denom; // fraction of quarks insie this radius
+            hheavyraa[istep][ir]->SetBinContent(ibin, hheavypt[istep][ir]->GetBinContent(ibin) / (scale*hheavypt[0][ir]->GetBinContent(ibin)));
+          }
+        }
+      }
     }
   }
 
@@ -603,14 +607,15 @@ void diffusion(
 
       for(int iquark=0; iquark<maxdraw_trackheavy; iquark++) {
         if (!trackheavy[iquark][itime])
-	  Error("", "no trackheavy[%d][%d]", iquark, itime);
+	        Error("", "no trackheavy[%d][%d]", iquark, itime);
         else
-	  trackheavy[iquark][itime]->Draw("p,same");
+	        trackheavy[iquark][itime]->Draw("p,same");
       }
       ltx.DrawLatex(-9.0, 10.2, "Temperature");
       
       // Panel 2: pt distribution, original and modified
       if (!onepanel) cc->cd(2);
+      TH1D* hheavypt_orig = hheavypt[0][0];
       hheavypt_orig->SetLineWidth(3);
       hheavypt_orig->SetLineColor(1);
       hheavypt_orig->SetXTitle("Transverse Momentum (GeV/c)");
@@ -618,19 +623,19 @@ void diffusion(
       
       // determine the y-axis scale for this figure....
       double maxyrange = hheavypt_orig->GetBinContent(hheavypt_orig->GetMaximumBin());
-      if (maxyrange < hheavypt[itime]->GetBinContent(hheavypt[itime]->GetMaximumBin())) 
-        maxyrange = hheavypt[itime]->GetBinContent(hheavypt[itime]->GetMaximumBin());
+      if (maxyrange < hheavypt[itime][0]->GetBinContent(hheavypt[itime][0]->GetMaximumBin())) 
+        maxyrange = hheavypt[itime][0]->GetBinContent(hheavypt[itime][0]->GetMaximumBin());
       maxyrange = 1.1 * maxyrange;
       hheavypt_orig->SetMaximum(maxyrange);
       
       if (!onepanel) hheavypt_orig->DrawCopy();
-      hheavypt[itime]->SetLineWidth(3);
-      hheavypt[itime]->SetLineColor(2);
-      if (!onepanel) hheavypt[itime]->DrawCopy("same");
+      hheavypt[itime][0]->SetLineWidth(3);
+      hheavypt[itime][0]->SetLineColor(2);
+      if (!onepanel) hheavypt[itime][0]->DrawCopy("same");
       
       TLine *t1 = new TLine(hheavypt_orig->GetMean(),0.0,hheavypt_orig->GetMean(),10000.0);
       if (!onepanel) t1->Draw("same");
-      TLine *t2 = new TLine(hheavypt[itime]->GetMean(),0.0,hheavypt[itime]->GetMean(),10000.0);
+      TLine *t2 = new TLine(hheavypt[itime][0]->GetMean(),0.0,hheavypt[itime][0]->GetMean(),10000.0);
       t2->SetLineColor(2);
       if (!onepanel) t2->Draw("same");
       
@@ -640,12 +645,8 @@ void diffusion(
       if (!onepanel) cc->cd(3);
       for (int ibin=1;ibin<=50;ibin++) {
         if (hheavypt_orig->GetBinContent(ibin) > 0) {
-	  hratio->SetBinContent(ibin, 
-	  		      hheavypt[itime]->GetBinContent(ibin) / 
-	  		      hheavypt_orig->GetBinContent(ibin));
-	  hheavyraa[itime]->SetBinContent(ibin, 
-	  		      hheavypt[itime]->GetBinContent(ibin) / 
-	  		      hheavypt_orig->GetBinContent(ibin));
+          hratio->SetBinContent(ibin, hheavypt[itime][0]->GetBinContent(ibin) / hheavypt_orig->GetBinContent(ibin));
+	        hheavyraa[itime][0]->SetBinContent(ibin, hheavypt[itime][0]->GetBinContent(ibin) / hheavypt_orig->GetBinContent(ibin));
         }
       }
 
@@ -670,15 +671,15 @@ void diffusion(
       // options for saving out information
       if (save.Contains("last")) { 
         if (itime==N_timesteps-(int)timeStepScale) {
-	  cc->Print(Form("VisualOut/a%.3g.gif",parameterA));
-	  cc->SaveAs(Form("VisualOut/a%.3g.C",parameterA));
-        } else {
-	  if (itime==N_timesteps) {
-	    cc->Print(Form("VisualOut/a%.3g.gif",parameterA));
-	    cc->SaveAs(Form("VisualOut/a%.3g.C",parameterA));
-	  }
+	        cc->Print(Form("VisualOut/a%.3g.gif",parameterA));
+	        cc->SaveAs(Form("VisualOut/a%.3g.C",parameterA));
         }
-      } else if (save.Contains("all")) { 
+        else if (itime==N_timesteps) {
+	        cc->Print(Form("VisualOut/a%.3g.gif",parameterA));
+	        cc->SaveAs(Form("VisualOut/a%.3g.C",parameterA));
+	      }
+      }
+      else if (save.Contains("all")) { 
         cc->Print(Form("VisualOut/canvas_%03d.gif",itime));
       }
       
@@ -706,44 +707,35 @@ void diffusion(
     hdeltaphi3->Scale(1.0/hdeltaphi3->Integral());
     hdeltaphi3->DrawCopy("l,same");
 
-    TCanvas *c999 = new TCanvas("c999","c999",10,10,700,700);
-    c999->cd();				     
+    //TCanvas *c999 = new TCanvas("c999","c999",10,10,700,700);
+    //c999->cd();				     
     
-    hheavyraa_radius0_5->SetLineWidth(3);
-    hheavyraa_radius0_5->SetLineColor(2);
-    hheavyraa_radius1_0->SetLineWidth(3);
-    hheavyraa_radius1_0->SetLineColor(6);
-    hheavyraa_radius1_7->SetLineWidth(3);
-    hheavyraa_radius1_7->SetLineColor(4);
-    hheavyraa_radius2_5->SetLineWidth(3);
-    hheavyraa_radius2_5->SetLineColor(1);
-    hheavyraa_radius0_5->SetMinimum(0.0);
-    hheavyraa_radius0_5->SetMaximum(2.0);
-    hheavyraa_radius0_5->SetXTitle("Transverse Momentum (GeV/c)");
-    hheavyraa_radius0_5->SetYTitle("R_{AA}");
-    double maxyrange = hheavyraa_radius0_5->GetBinContent(hheavyraa_radius0_5->GetMaximumBin());
-    if (maxyrange < 1.5)
-      maxyrange = 1.5;
-    maxyrange = 1.1 * maxyrange;
-    hheavyraa_radius0_5->SetMaximum(2.0); // try just leaving fixed
-    hheavyraa_radius0_5->DrawCopy();
-    hheavyraa_radius1_0->DrawCopy("same");
-    hheavyraa_radius1_7->DrawCopy("same");
-    hheavyraa_radius2_5->DrawCopy("same");
+    //hheavyraa_radius0_5->SetLineWidth(3);
+    //hheavyraa_radius0_5->SetLineColor(2);
+    //hheavyraa_radius1_0->SetLineWidth(3);
+    //hheavyraa_radius1_0->SetLineColor(6);
+    //hheavyraa_radius1_7->SetLineWidth(3);
+    //hheavyraa_radius1_7->SetLineColor(4);
+    //hheavyraa_radius2_5->SetLineWidth(3);
+    //hheavyraa_radius2_5->SetLineColor(1);
+    //hheavyraa_radius0_5->SetMinimum(0.0);
+    //hheavyraa_radius0_5->SetMaximum(2.0);
+    //hheavyraa_radius0_5->SetXTitle("Transverse Momentum (GeV/c)");
+    //hheavyraa_radius0_5->SetYTitle("R_{AA}");
+    //double maxyrange = hheavyraa_radius0_5->GetBinContent(hheavyraa_radius0_5->GetMaximumBin());
+    //if (maxyrange < 1.5)
+    //  maxyrange = 1.5;
+    //maxyrange = 1.1 * maxyrange;
+    //hheavyraa_radius0_5->SetMaximum(2.0); // try just leaving fixed
+    //hheavyraa_radius0_5->DrawCopy();
+    //hheavyraa_radius1_0->DrawCopy("same");
+    //hheavyraa_radius1_7->DrawCopy("same");
+    //hheavyraa_radius2_5->DrawCopy("same");
 
     cc->Write("maincanvas");
     c2->Write("subcanvas");
   }
   
-  for (int i=0;i<N_timesteps;i++) {
-    if (plotThings || i == 0 || i == N_timesteps-1) {
-      char fooout[100];
-      sprintf(fooout,"hheavypt%d",i);
-      hheavypt[i]->Write(fooout);
-      sprintf(fooout,"hheavyraa%d",i);
-      hheavyraa[i]->Write(fooout);
-    }
-  }
   // write out pT distribution in time steps
   // write out raa in time steps
   // write out canvas of final display ?????
@@ -757,41 +749,17 @@ void diffusion(
   hdeltaphi2->Write();
   hdeltaphi3->Write();
 
-  hheavyptphiorig0_5->Write();
-  hheavyptphi0_5->Write();
-  hheavyptphiorig1_0->Write();
-  hheavyptphi1_0->Write();
-  hheavyptphiorig1_7->Write();
-  hheavyptphi1_7->Write();
-  hheavyptphiorig2_5->Write();
-  hheavyptphi2_5->Write();
-  hheavyptphiorig->Write();
-  hheavyptphi->Write();
-
-  hheavypt_radius0_5_orig->Write();
-  hheavypt_radius1_0_orig->Write();
-  hheavypt_radius1_7_orig->Write();
-  hheavypt_radius2_5_orig->Write();
-  hheavypt_radius0_5->Write();
-  hheavypt_radius1_0->Write();
-  hheavypt_radius1_7->Write();
-  hheavypt_radius2_5->Write();
-
-  hheavyraa_radius0_5->Write();
-  hheavyraa_radius1_0->Write();
-  hheavyraa_radius1_7->Write();
-  hheavyraa_radius2_5->Write();
-  hheavyraa_particle->Write();
-  hheavyraa_radius0_5_particle->Write();
-  hheavyraa_radius1_0_particle->Write();
-  hheavyraa_radius1_7_particle->Write();
-  hheavyraa_radius2_5_particle->Write();
-
-  hheavydpt_particle->Write();
-  hheavydpt_radius0_5_particle->Write();
-  hheavydpt_radius1_0_particle->Write();
-  hheavydpt_radius1_7_particle->Write();
-  hheavydpt_radius2_5_particle->Write();
+  for (short ir = 0; ir < 5; ir++) {
+    for (int itime = 0; itime <= N_timesteps; itime++) {
+      if (plotThings || itime == 0 || itime == N_timesteps) {
+        hheavypt[itime][ir]->Write();
+        hheavyptphi[itime][ir]->Write();
+        hheavyraa[itime][ir]->Write();
+      }
+    }
+    hheavyraa_particle[ir]->Write();
+    hheavydpt_particle[ir]->Write();
+  }
 
   outFile->Close();
 

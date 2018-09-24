@@ -23,9 +23,10 @@ TODO: Before setting up your events, this needs to happen:
           NUMT = just the number of spatial bins in x,y; e.g. 200.
           AT = this is the spatial lattice spacing, in units of GeV^-1. Following the notation from TGlauberMC, AT should be given by AT = 5.0677 * 2*xmax / bins.
           SNAPUPDATE = this tells SONIC how many times to save the current temperature, velocity fields, etc. If you only want dNch_dy for example, set this number high to save disk space (e.g. 20000), but if you do care about what the temperature looks like at each timestep, you can set it lower to, e.g., 100.
+          SMOOTHING = whether SONIC should do smoothing. Generally this should be 1 for Glauber "lumpy" IC's. I've found this isn't needed for 8TeV p+Pb, but it was critically important for 200GeV He3+Au and larger systems.
 
         Txt2Hist.C: values for N
-        diffusion.C: values for NGridX, NGridY should be modified (see TODO)
+        diffusion.C: values for NGridX, NGridY, timestep_length_fm should be modified (see TODO)
 
 ## condor_run.csh ##
 This is the primary job driver script. It executes each module in the correct order, organizing input files appropriately and copying over needed file. For instance, if a custom file (such as an initial condition) is provided, a line in condor_run.csh can be added to copy over the corresponding .dat file. (Alternatively, of course, you can modify the line below to copy over the .dat file when instantiating the event.) Other files, like diffusion.C and Txt2Hist.C, are copied at run time from the parent directory so that necessary changes can be made once and propagate to all events.

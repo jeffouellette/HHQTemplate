@@ -3,26 +3,16 @@ IC		-2
 //COLLISION parameters
 RNUC		6.6
 ANUC		0.55
-// 72 at 8.16TeV, 42 at 200GeV
+// nucleon-nucleon cross section. 72 at 8.16TeV, 42 at 200GeV. If you're using Glauber this shouldn't matter... best to change it anyways.
 SIGMANN		42
 //Atomic number of Nuclei (only symmetric collisions)
 TANORM		208
-// number of lattice sites
-NUMT		181
-//impact parameter 
+// number of lattice sites (number of bins)
+NUMT		141
+//impact parameter. Not important if you're using Glauber.
 B		0
-// spatial lattice spacing in GeV^-1 for 141 bins, xmax=5fm
-//AT		0.361981
-// spatial lattice spacing in GeV^-1 for 151 bins, xmax=5fm
-//AT		0.338009
-// spatial lattice spacing in GeV^-1 for 181 bins, xmax=7.5fm
-//AT		0.422311
-// spatial lattice spacing in GeV^-1 for 201 bins, xmax=5fm
-//AT		0.253927
-// spatial lattice spacing in GeV^-1 for 150 bins, xmax=7.5fm
-//AT		0.510393
-// spatial lattice spacing in GeV^-1 for 250 bins, xmax=7.5fm
-//AT		0.306236
+// spatial lattice spacing in GeV^-1 for 141 bins, xmax=5fm (for example)
+//AT		0.361979
 // temporal lattice spacing 
 EPS		0.001
 //initial starting time in fm over c 
@@ -69,7 +59,7 @@ PCE	0
 MONOEPS	0.0
 //Arxiv 1605.09418
 SCAL	1
-//smoothing for lumpy conditions 0 = off
+//smoothing for lumpy conditions 0 = off. I found this necessary even in Glauber He3+Au, so this may be useful.
 SMOOTHING   0
 //smoothing cut-off energy density scale [GeV^4]
 SMOOTH   0.001
