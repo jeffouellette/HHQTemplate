@@ -19,7 +19,7 @@ TODO: Before setting up your events, this needs to happen:
       After setting up your events, these files need to be appropriately modified:
         condor_run.csh
         params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!***
-          SIGMANN = nucleon nucleon cross-section, I'm not sure this really is important but it can't hurt to make sure it is correct.
+          SIGMANN = nucleon nucleon cross-section, I'm not sure this really is important but it can't hurt to make sure it is correct.\s\s
           NUMT = just the number of spatial bins in x,y; e.g. 200.
           AT = this is the spatial lattice spacing, in units of GeV^-1. Following the notation from TGlauberMC, AT should be given by AT = 5.0677 * 2*xmax / bins.
           SNAPUPDATE = this tells SONIC how many times to save the current temperature, velocity fields, etc. If you only want dNch_dy for example, set this number high to save disk space (e.g. 20000), but if you do care about what the temperature looks like at each timestep, you can set it lower to, e.g., 100.
