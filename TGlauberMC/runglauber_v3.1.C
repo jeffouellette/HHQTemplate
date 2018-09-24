@@ -618,42 +618,15 @@ void runAndSmearNucleons(const Int_t n1,
   smearing_function->SetParameter(0,sigs);
   //smearing_function->SetParameter(0, 0.4); //smearing width
 
-// Change energy scaling to get dN_ch/deta to match data
-// Can try finding the energy scaling e0 at a reasonable temperature for 8.16 TeV collisions, then running SONIC with O(10) different energy scalings e0 around that value
-//  loadeos("BMWEOS");
-//  const Double_t TSTART = 0.370; // starting temperature in GeV - corresponds to eoT4 ~ 12.07192512055709 and e0 ~ 0.00193359
-  //Double_t AT = 0.542946; //0.30405; lattice in fm. 0.30405 corresponds to 0.04GeV^-1=10GeV^-1 /200 bins
-//  const Double_t AT = 0.361981; // equivalent to this value in GeV^-1: (system width in fm) / ((number of bins) * hbar * c)
-  // this temperature and lattice spacing gives e0 = 0.00388442
-//  const Double_t SCAL = 1.33; // entropy scale factor
-
-//  Int_t temp;
-//  for (temp=0;temp<eoslength;temp++)
-//    {
-//      if (Ti[temp]>TSTART) break;
-//    }
-//  const Double_t e0_scal=(eoT4[temp])*(Ti[temp]*AT)*(Ti[temp]*AT)*(Ti[temp]*AT)*(Ti[temp]*AT); // e0 = eoT4 * T^4 * dx^4; units: [e0] = GeV, comes out as 0.00193359 typically
-
   const Int_t nbins = 200;
   const Int_t nbinsx = nbins;
   const Int_t nbinsy = nbins;
   const Double_t max_x = 15;
-  Double_t e0;
-
-  e0 = 0.00234451 * TMath::Power(140.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.4 (better)
-  //e0 = 0.00170 * TMath::Power(141.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.5
-  //e0 = 0.00632 * TMath::Power(141.*max_x/(7.5*nbins), 4); // value for 0-5% centrality He3Au at 200GeV
-
-
-  // below is for investigating the optimal e0
-  const Double_t SCAL = 1.0; // just multiplies the energy.
 
   for (Int_t ievent=n1; ievent<n2; ++ievent) {
     //get an event with at least one collision
     while (!mcg->NextEvent()) {}
 
-    //e0 = e0_scal + ((ievent-n1)/100)*de0_scal;
-    cout << "event = " << ievent << ", e0 = " << e0 << endl;
     //access, save and (if wanted) print out nucleons
     TObjArray* nucleons=mcg->GetNucleons();
     if (!nucleons) 
@@ -819,8 +792,6 @@ void runAndSmearNucleons(const Int_t n1,
           content += smearing_function->Eval(nucl->GetX() - xval,
                                              nucl->GetY() - yval);
         }
-        content *= SCAL*e0;
-
         inited_hist_translated->SetBinContent(xbin, ybin, content);
       }
     }
