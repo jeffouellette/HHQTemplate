@@ -13,14 +13,14 @@ TODO: You need to specify your grid parameters in Glauber before running. This c
 ## setup_events.sh ##
 setup_events.sh will setup $2-$1 events in the directory it is executed in. For event$i, it will create the directory event$i, in which all of the processing will occur. The main script and code will be copied over and should be modified to match the params.txt file, which should be modified in turn to match the initial conditions. This includes changing the system "SPC", number of bins, but also the grid spacing/grid size, nucleon-nucleon cross-section. The smoothing option is also important for larger systems with lumpy initial conditions, e.g. He3+Au or He4+Au. The script requires 5 arguments total however; $3 tells the script if SONIC is to be run, $4 is if Txt2Hist will be run, and $5 is if diffusion will be run.
 
-TODO: Before setting up your events, this needs to happen:
-        TGlauberMC: this should already have been run, but if you haven't generated initial conditions and converted to .dat, this is a good time to do so
-        Edit setup_events.sh: user-defined directories should be changed (see TODO items in file!)
-      After setting up your events, these files need to be appropriately modified:
-        condor_run.csh
-        params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!***
-          SIGMANN = nucleon nucleon cross-section, I'm not sure this really is important but it can't hurt to make sure it is correct.\s\s
-          NUMT = just the number of spatial bins in x,y; e.g. 200.
+TODO: Before setting up your events, this needs to happen:<br>
+        TGlauberMC: this should already have been run, but if you haven't generated initial conditions and converted to .dat, this is a good time to do so<br>
+        Edit setup_events.sh: user-defined directories should be changed (see TODO items in file!)<br>
+      After setting up your events, these files need to be appropriately modified:<br>
+        condor_run.csh<br>
+        params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!***<br>
+          SIGMANN = nucleon nucleon cross-section, I'm not sure this really is important but it can't hurt to make sure it is correct.<br>
+          NUMT = just the number of spatial bins in x,y; e.g. 200.<br>
           AT = this is the spatial lattice spacing, in units of GeV^-1. Following the notation from TGlauberMC, AT should be given by AT = 5.0677 * 2*xmax / bins.
           SNAPUPDATE = this tells SONIC how many times to save the current temperature, velocity fields, etc. If you only want dNch_dy for example, set this number high to save disk space (e.g. 20000), but if you do care about what the temperature looks like at each timestep, you can set it lower to, e.g., 100.
           SMOOTHING = whether SONIC should do smoothing. Generally this should be 1 for Glauber "lumpy" IC's. I've found this isn't needed for 8TeV p+Pb, but it was critically important for 200GeV He3+Au and larger systems.
