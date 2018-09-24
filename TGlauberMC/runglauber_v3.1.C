@@ -530,16 +530,25 @@ void runAndSaveNucleons(const Int_t n,
   if (fname) 
     out=new TFile(fname,"recreate",fname,9);
 
+  //Int_t numHaloEvents = 0;
   for (Int_t ievent=0; ievent<n; ++ievent) {
     //get an event with at least one collision
     mcg->Run(1);
     if (ievent%100==0)
       cout << "\r" << 100.*ievent/n << "% done" << flush;
 
+    //For filtering "halo" UPC events
+    //const Int_t npartA = mcg->GetNpartA();
+    //const Int_t npartB = mcg->GetNpartB();
+    //if (npartA != 1 && npartB != 1)
+    //  continue;
+    //numHaloEvents++; 
+
     //access, save and (if wanted) print out nucleons
     TObjArray* nucleons=mcg->GetNucleons();
     if (!nucleons) 
       continue;
+
     if (out)
       nucleons->Write(Form("nucleonarray%d",ievent),TObject::kSingleKey);
 
@@ -561,6 +570,7 @@ void runAndSaveNucleons(const Int_t n,
       }
     }
   }
+  //cout << endl << Form("Found %i/%i halo events!", numHaloEvents, n) << endl;
   cout << endl << "Done!" << endl;
   if (out) {
     TNtuple *nt = mcg->GetNtuple();
@@ -572,8 +582,8 @@ void runAndSaveNucleons(const Int_t n,
 }
 
 //---------------------------------------------------------------------------------
-void runAndSmearNucleons(const Int_t n1, // first event number
-                         const Int_t n2, // last event number
+void runAndSmearNucleons(const Int_t n1,
+                         const Int_t n2,
                          const char *sysA,
                          const char *sysB,
                          const Double_t signn,
@@ -585,15 +595,18 @@ void runAndSmearNucleons(const Int_t n1, // first event number
                          const Double_t maxb)
 {
   // Run Glauber and store smeared nucleon positions in a file.
-  const Int_t n = n2 - n1; // total number of events to generate
+  const Int_t n = n2 - n1;
 
   TFile *out = TFile::Open(fname,"recreate",fname,9);
   if (!out)
     return;
   TGlauberMC *mcg = new TGlauberMC(sysA, sysB, signn, sigwidth);
   mcg->SetMinDistance(mind);
+
+  // Force max&min impact parameters
   if (maxb != -1.0) mcg->SetBmax(maxb);
   if (minb != -1.0) mcg->SetBmin(minb);
+
   TNtuple *nt = new TNtuple("nt","nt",
       "Npart:Ncoll:B:Psi1P:Ecc1P:Psi2P:Ecc2P:Psi3P:Ecc3P:Psi4P:Ecc4P:Psi5P:Ecc5P:Psi1G:Ecc1G:Psi2G:Ecc2G:Psi3G:Ecc3G:Psi4G:Ecc4G:Psi5G:Ecc5G:Sx2P:Sy2P:Sx2G:Sy2G");
   nt->SetDirectory(out);
@@ -601,7 +614,7 @@ void runAndSmearNucleons(const Int_t n1, // first event number
   const double sigs = sigwidth;
   TF1* rad = new TF1("rad","x*TMath::Exp(-x*x/(2.*[0]*[0]))/(2*TMath::Pi()*[0]*[0])",0.0,3*sigs);
   rad->SetParameter(0,sigs);
-  TF2* smearing_function = new TF2("smear_tf2", "TMath::Sqrt(x*x+y*y)*TMath::Exp(-(x*x+y*y)/(2.*[0]*[0]))/(2*TMath::Pi()*[0]*[0])", 0, 10*sigs, 0, 10*sigs);
+  TF2* smearing_function = new TF2("smear_tf2", "TMath::Sqrt(x*x+y*y)*TMath::Exp(-(x*x+y*y)/(2.*[0]*[0]))/(2*TMath::Pi()*[0]*[0])", -25*sigs, 25*sigs, -25*sigs, 25*sigs);
   smearing_function->SetParameter(0,sigs);
   //smearing_function->SetParameter(0, 0.4); //smearing width
 
@@ -621,32 +634,26 @@ void runAndSmearNucleons(const Int_t n1, // first event number
 //    }
 //  const Double_t e0_scal=(eoT4[temp])*(Ti[temp]*AT)*(Ti[temp]*AT)*(Ti[temp]*AT)*(Ti[temp]*AT); // e0 = eoT4 * T^4 * dx^4; units: [e0] = GeV, comes out as 0.00193359 typically
 
-
-  //TODO edit nbins, max_x, e0_scal, de0_scal
-  const Int_t nbins = 141;
+  const Int_t nbins = 200;
   const Int_t nbinsx = nbins;
   const Int_t nbinsy = nbins;
-  const Double_t max_x = 7.5;
-
-
-  //TODO edit e0 if you are interested in the overall energy scaling
+  const Double_t max_x = 15;
   Double_t e0;
-  e0 = 0.00170 * TMath::Power(140./(float)nbins, 4); // value derived from minbias pPb at 8.16TeV
 
-  // for testing multiplicity dependence on the overall scaling
-  //const Double_t e0_scal = 0.00175*TMath::Power(141.*max_x/((float)nbins*5.), 4); // exponent converts value to correspond to the proper bin width (so fewer or more bins can be run)
-  //const Double_t de0_scal = 0.0001*TMath::Power(141.*max_x/((float)nbins*5.), 4); // bin width in e0 values.
-  //const Double_t SCAL = 1.0; // just multiplies the energy.
+  e0 = 0.00234451 * TMath::Power(140.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.4 (better)
+  //e0 = 0.00170 * TMath::Power(141.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.5
+  //e0 = 0.00632 * TMath::Power(141.*max_x/(7.5*nbins), 4); // value for 0-5% centrality He3Au at 200GeV
 
-  // generate n events
+
+  // below is for investigating the optimal e0
+  const Double_t SCAL = 1.0; // just multiplies the energy.
+
   for (Int_t ievent=n1; ievent<n2; ++ievent) {
     //get an event with at least one collision
     while (!mcg->NextEvent()) {}
 
-    // calculate an energy scaling parameter to use if trying to find best e0 choice
     //e0 = e0_scal + ((ievent-n1)/100)*de0_scal;
     cout << "event = " << ievent << ", e0 = " << e0 << endl;
-
     //access, save and (if wanted) print out nucleons
     TObjArray* nucleons=mcg->GetNucleons();
     if (!nucleons) 
@@ -777,7 +784,6 @@ void runAndSmearNucleons(const Int_t n1, // first event number
     v[i++] = sy2g/NSAMP;
     nt->Fill(v);
 
-    // now create a preliminary energy density distribution
     TH2D* inited_hist = new TH2D(Form("inited_event%i",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
     for (Int_t ybin=1; ybin<=nbinsy; ybin++) {
       const Double_t yval = inited_hist->GetYaxis()->GetBinCenter(ybin);
@@ -1084,6 +1090,42 @@ void runAndCalcDens(const Int_t n,
     delete out;
   }
 }
+
+//void runAndSaveHaloEvents(
+//  const Int_t n,
+//  const char *sysA,
+//  const char *sysB,
+//  const Double_t signn,
+//  const char *fname)
+//{
+//  TGlauberMC *mcg = new TGlauberMC(sysA,sysB,signn);
+//  mcg->SetMinDistance(mind);
+//  TFile *out = TFile::Open(fname,"recreate",fname,9);
+//  if (!out)
+//    return;
+//
+//  for (
+//  TNtuple *nt = new TNtuple("nt","nt",
+//      "Npart:Ncoll:B:Psi1P:Ecc1P:Psi2P:Ecc2P:Psi3P:Ecc3P:Psi4P:Ecc4P:Psi5P:Ecc5P:Psi1G:Ecc1G:Psi2G:Ecc2G:Psi3G:Ecc3G:Psi4G:Ecc4G:Psi5G:Ecc5G:Sx2P:Sy2P:Sx2G:Sy2G");
+//  nt->SetDirectory(out);
+//
+//  const Int_t NSAMP = 100;
+//  TF1 *rad = new TF1("rad","x*TMath::Exp(-x*x/(2.*[0]*[0]))",0.0,3*sigs);
+//  rad->SetParameter(0,sigs);
+//
+//  for (Int_t ievent=0; ievent<n; ++ievent) {
+//    while (!mcg->NextEvent()) {}
+//
+//    const TGlauNucleus *nucA   = mcg->GetNucleusA();
+//    const TObjArray *nucleonsA = nucA->GetNucleons();
+//    const Int_t AN             = nucA->GetN();
+//    const TGlauNucleus *nucB   = mcg-> GetNucleusB();
+//    const TObjArray *nucleonsB = nucB->GetNucleons();
+//    const Int_t BN             = nucB->GetN();
+//
+//    
+//}
+
 
 //---------------------------------------------------------------------------------
 ClassImp(TGlauNucleus)
