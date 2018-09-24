@@ -267,6 +267,7 @@ void smoothenHistogram()
 
 
 void SetStyle (TCanvas* c, TH2D* h) {
+  //gStyle->SetPalette(kRainBow);
   c->SetWindowSize(800, 600);
   c->SetFillColor(kBlue + 3);
   c->SetTickx();
@@ -597,7 +598,7 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
         if(xbin%20==0 && ybin%20==0) {
           double xbincenter = htemperature[itime-1]->GetXaxis()->GetBinCenter(xbin);
           double ybincenter = htemperature[itime-1]->GetYaxis()->GetBinCenter(ybin);
-          TArrow *boost_vector = new TArrow (xbincenter,ybincenter,xbincenter+beta_x,ybincenter+beta_y,0.06,"|>");
+          TArrow *boost_vector = new TArrow (xbincenter,ybincenter,xbincenter+beta_x,ybincenter+beta_y,0.015,"|>");
           boost_vector->SetLineWidth (2);
           boost_vector->SetLineColor (10);
           boost_vector->SetFillColor (10);
@@ -607,7 +608,7 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
           // also do not draw arrow head if the vector has length zero (looks bad)
           if ( htemperature[itime-1]->GetBinContent(xbin,ybin) > arrowTthresh &&
                sqrt(beta_x*beta_x + beta_y*beta_y) > 0.12 )          
-           boost_vector->Draw("same");
+           boost_vector->Draw("|>");
         } // end draw boost vector for every 10th bin
       }
     } // end loop over x,y, grid
