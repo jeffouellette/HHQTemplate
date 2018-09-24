@@ -572,8 +572,8 @@ void runAndSaveNucleons(const Int_t n,
 }
 
 //---------------------------------------------------------------------------------
-void runAndSmearNucleons(const Int_t n1,
-                         const Int_t n2,
+void runAndSmearNucleons(const Int_t n1, // first event number
+                         const Int_t n2, // last event number
                          const char *sysA,
                          const char *sysB,
                          const Double_t signn,
@@ -585,7 +585,7 @@ void runAndSmearNucleons(const Int_t n1,
                          const Double_t maxb)
 {
   // Run Glauber and store smeared nucleon positions in a file.
-  const Int_t n = n2 - n1;
+  const Int_t n = n2 - n1; // total number of events to generate
 
   TFile *out = TFile::Open(fname,"recreate",fname,9);
   if (!out)
@@ -629,25 +629,24 @@ void runAndSmearNucleons(const Int_t n1,
   const Double_t max_x = 7.5;
 
 
+  //TODO edit e0 if you are interested in the overall energy scaling
   Double_t e0;
-  //e0 = 0.00170 * TMath::Power(140./(float)nbins, 4); // value derived from minbias pPb at 8.16TeV
+  e0 = 0.00170 * TMath::Power(140./(float)nbins, 4); // value derived from minbias pPb at 8.16TeV
 
-  const Double_t e0_scal = 0.00175*TMath::Power(141.*max_x/((float)nbins*5.), 4); // exponent converts value to correspond to the proper bin width (so fewer or more bins can be run)
-  const Double_t de0_scal = 0.0001*TMath::Power(141.*max_x/((float)nbins*5.), 4); // bin width in e0 values.
-  const Double_t SCAL = 1.0; // just multiplies the energy.
+  // for testing multiplicity dependence on the overall scaling
+  //const Double_t e0_scal = 0.00175*TMath::Power(141.*max_x/((float)nbins*5.), 4); // exponent converts value to correspond to the proper bin width (so fewer or more bins can be run)
+  //const Double_t de0_scal = 0.0001*TMath::Power(141.*max_x/((float)nbins*5.), 4); // bin width in e0 values.
+  //const Double_t SCAL = 1.0; // just multiplies the energy.
 
-
-  /*Double_t p0=(poT4[temp])*Ti[temp]*AT;
-  p0*=Ti[temp]*AT;
-  p0*=Ti[temp]*AT;
-  p0*=Ti[temp]*AT;*/
-
+  // generate n events
   for (Int_t ievent=n1; ievent<n2; ++ievent) {
     //get an event with at least one collision
     while (!mcg->NextEvent()) {}
 
-    e0 = e0_scal + ((ievent-n1)/100)*de0_scal;
+    // calculate an energy scaling parameter to use if trying to find best e0 choice
+    //e0 = e0_scal + ((ievent-n1)/100)*de0_scal;
     cout << "event = " << ievent << ", e0 = " << e0 << endl;
+
     //access, save and (if wanted) print out nucleons
     TObjArray* nucleons=mcg->GetNucleons();
     if (!nucleons) 
@@ -778,6 +777,7 @@ void runAndSmearNucleons(const Int_t n1,
     v[i++] = sy2g/NSAMP;
     nt->Fill(v);
 
+    // now create a preliminary energy density distribution
     TH2D* inited_hist = new TH2D(Form("inited_event%i",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
     for (Int_t ybin=1; ybin<=nbinsy; ybin++) {
       const Double_t yval = inited_hist->GetYaxis()->GetBinCenter(ybin);

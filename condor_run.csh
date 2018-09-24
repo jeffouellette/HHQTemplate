@@ -37,8 +37,8 @@ setenv HDF5_DISABLE_VERSION_CHECK 1
 if ( ${MOVE_TO_SCRATCHDISK} == 1 ) then
   echo "Moving directory to scratchdisk..."
   cd ${_CONDOR_SCRATCH_DIR}
-  mkdir -p jouellette
-  cd jouellette
+  mkdir -p jouellette #TODO change the directory name
+  cd jouellette #TODO change the directory name
   cp -r ${STARTDIR}/${RUNDIR} ${RUNDIR}
   echo "Completed moving to scratchdisk."
 endif
@@ -46,7 +46,7 @@ endif
 
 ### Move into the run directory (if we're not already there)
 if ( ${MOVE_TO_SCRATCHDISK} == 1 ) then
-    cd ${_CONDOR_SCRATCH_DIR}/jouellette/${RUNDIR}
+    cd ${_CONDOR_SCRATCH_DIR}/jouellette/${RUNDIR} #TODO change the directory name
 else
     cd ${RUNDIR}
 endif
@@ -82,7 +82,7 @@ endif
 if ( ${RUN_Txt2Hist} == 1 ) then
   echo "Running Txt2Hist..."
   rm ./Txt2Hist.C
-  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/Txt2Hist.C ./Txt2Hist.C
+  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/Txt2Hist.C ./Txt2Hist.C #TODO change the directory
   root -l -b -q 'Txt2Hist.C (301, "data/snapshot/", "./", '${NUMFRAMES}', 0.140, true, '${EVENTNUMPLOT}', '${MAXTEMP}')' #> ${RUNDIR}/Txt2Hist.log # 301 gives p+Pb label
   
   # move graphout files to their own directory
@@ -97,7 +97,8 @@ endif
 if ( ${RUN_Diffusion} == 1 ) then
   echo "Running diffusion..."
   rm ./diffusion.C
-  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/diffusion.C ./diffusion.C
+  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/diffusion.C ./diffusion.C #TODO change the directory
+  cp -n /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/pPb8TeVHeavyQuarkPtSpectra.root ./heavy_quark_pt.root #TODO change the directory
   root -l -b -q 'diffusion.C ("nagle-hydro.root", "quarkdist.root", "inited_event'${EVENTNUM}'_translated", "heavy_quark_pt.root", false, 100000, 1000, "fout.root", '${EVENTNUM}')'
   echo "Completed diffusion."
 endif

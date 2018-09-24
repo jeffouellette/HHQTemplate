@@ -8,7 +8,7 @@
 
 dir=`pwd`
 sys=He3Au
-email=your.junk.email.address@aol.com
+email=definitely.not.jeffrey.ouellette@colorado.edu
 echo "Setting up '$(($2-$1))' event(s) in $dir..."
 
 echo "Universe = vanilla" > submit_events.job
