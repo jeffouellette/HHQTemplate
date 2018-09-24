@@ -18,7 +18,7 @@ TODO: Before setting up your events, this needs to happen:<br>
         Edit setup_events.sh: user-defined directories should be changed (see TODO items in file!)<br>
       After setting up your events, these files need to be appropriately modified:<br>
         condor_run.csh<br>
-        params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!***<br>
+        params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!*** <br>
           SIGMANN = nucleon nucleon cross-section, I'm not sure this really is important but it can't hurt to make sure it is correct.<br>
           NUMT = just the number of spatial bins in x,y; e.g. 200.<br>
           AT = this is the spatial lattice spacing, in units of GeV^-1. Following the notation from TGlauberMC, AT should be given by AT = 5.0677 * 2*xmax / bins.
