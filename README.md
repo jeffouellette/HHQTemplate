@@ -19,6 +19,7 @@ setup_events.sh will setup $2-$1 events in the directory it is executed in. For 
 TODO: Before setting up your events, this needs to happen:<br>
 * TGlauberMC: this should already have been run, but if you haven't generated initial conditions and converted to .dat, this is a good time to do so.
 * Edit setup_events.sh: user-defined directories should be changed (see TODO items in file!)
+
 After setting up your events, these files need to be appropriately modified:
 * condor_run.csh
 * params.txt: values for SIGMANN, NUMT, AT, SNAPUPDATE should be modified. ***This is probably the most important file to modify correctly!***
