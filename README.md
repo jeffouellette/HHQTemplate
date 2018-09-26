@@ -6,6 +6,7 @@ source /opt/sphenix/core/bin/sphenix_setup.csh -n pro.538
 
 ## TGlauberMC ##
 This directory contains runglauber_v3.1.C, which a modified version of the code provided at https://tglaubermc.hepforge.org/. The main difference is the addition of a function "runAndSmearNucleons" which generates a TNTuple with event properties and a 2D histogram with the wounded nucleon density, smeared out by a Gaussian. The TNTuple can be used for getting parameters like Psi2 or Epsilon2, whereas the TH2's are used by hydrodynamics as the initial energy density. When generating initial conditions, in addition to specifying the number of events and the collision system, the nucleon-nucleon cross section and nucleon smearing parameter must be set. If a minimum or maximum impact parameter is also desired, those can be specified in the last 2 arguments.
+
 Each nucleon is smeared according to a 2D normalized Gaussian around the nucleon x,y position. Thus, a single nucleon event can be interpreted as a wavefunction amplitude (i.e. as a probability density for finding a nucleon at each x,y). This particular framework begins with the ansatz that the sum of the Gaussians should be directly proportional to the energy density - with the exact constant dependent primarily on the center-of-mass energy (and also weakly on the collision system, in principle). The final charged particle multiplicity has been matched for a variety of scalings to data (https://arxiv.org/pdf/1710.09355.pdf) to determine the optimal multiplicity in 8.16TeV collisions, although for different energies this process should be repeated.
 
 After saving the Glauber initial conditions (e.g., to "outFile_pPb.root"), Hist2Txt.C must be run as a ROOT macro. This is a simple script that saves each histogram to its own ROOT file in the appropriate initedFiles directory, as well as an identical copy in .dat format. There are a few parameters at the top of the script to edit, but otherwise this *should* be pretty straightforward.
@@ -32,7 +33,9 @@ After setting up your events, these files need to be appropriately modified:
 
 ## condor_run.csh ##
 This is the primary job driver script. It executes each module in the correct order, organizing input files appropriately and copying over needed file. For instance, if a custom file (such as an initial condition) is provided, a line in condor_run.csh can be added to copy over the corresponding .dat file. (Alternatively, of course, you can modify the line below to copy over the .dat file when instantiating the event.) Other files, like diffusion.C and Txt2Hist.C, are copied at run time from the parent directory so that necessary changes can be made once and propagate to all events.
+
 This script takes 6 arguments; the first is simply the run directory, which must be in the same directory that condor_run.csh is in. $2 is the event number, so if the folder is event510, then $2 should be 510. $3 is the job number, so if you are running events 40 to 80, then event40 would have $3 = 0 (this is only for plotting purposes in Txt2Hist, so if you don't care about generating a .gif animation, this isn't important.) Finally, $4, $5, and $6 tell the script whether to run SONIC, Txt2Hist, and diffusion, respectively, and can take the values 0 (don't run) or 1 (do run).
+
 One last comment: there is a parameter at the top of the script called MOVE_TO_SCRATCHDISK which tells the code whether to move the event to a scratchdisk on the node the job is being executed on. This can help reduce stress on the sPHENIX disk and is recommended for bulk jobs.
 
 ## init, generate, vh2, b3d, and b3d-analyze ##
@@ -40,6 +43,7 @@ These are the main sonic routines. b3d requires access to hdf5, which is install
 
 ## Txt2Hist.C ##
 This file is meant to be run after the entire sonic routine has been completed. It takes the output from vh2 and generates a root file from the FOdata, Tcontour, and (optionally) EDprofile with temperature and fluid velocity distributions at each timestep which is intended for use in the diffusion routine. It can also save .gif images of the fluid at each timestep which can be later combined into animations.
+
 This routine can also generate nice-looking graphics for each event, however ROOT6 is recommended for the best looking graphics. This is because ROOT5 lacks many graphical interfaces, such as setting palettes. However each hydro event is self-contained, so this code can be downloaded and run locally to generate these snapshot portraits. Some code needs to be uncommented - namely, line 270, which sets the palette.
 
 ## diffusion.C ##
