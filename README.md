@@ -60,3 +60,9 @@ This is the condor submission script. If you want to change how some run is proc
 * quarkdist.root is the file copied to each run directory when setting up the events. This contains the initial energy density as a TH2 object, which is interpreted as a heavy quark spatial density function, and is used in diffusion to simulate heavy quark pair production locations.
 * params.txt is the primary parameters file used by sonic. There are several values in this file that need to be modified for sonic to run correctly, as listed above. The most important values are the number of bins and the bin width, but controlling the SNAPUPDATE parameter also helps keep the disk size in check.
 * log is the directory containing all of the output from condor_run.csh. Note that the output from the SONIC run is put in logdir within the event itself since it is more verbose.
+
+## See also ##
+SONIC is a hydrodynamics framework available on Bitbucket: https://bitbucket.org/mhabich/sonic/branch/master.
+
+The average multiplicity was matched to published CMS results at 8.16 TeV: https://arxiv.org/pdf/1710.09355.pdf.
+
