@@ -1,26 +1,31 @@
 #include "runglauber_v3.1.C"
 
-const int nbins = 141; //TODO: change me
+const int nbins = 200; //TODO: change me
 const double max_x = 5; // TODO: change me
-const string system = "He3Au"; //TODO: e.g. "He3Au" or "pPb". For accessing and saving the right files/directories.
 
 const bool saveQuarkDists = true; // TODO: whether to save wounded nucleon distributions in individual root files.
 
-const int firstEvent = 0;
-const int lastEvent = 500;
+// Output file from runglauber should be called "outFile_${system}_${firstEvent}_${lastEvent}.root".
+const string system = "pPb"; //TODO: e.g. "He3Au" or "pPb". For accessing and saving the right files/directories.
+const int firstEvent = 500;
+const int lastEvent = 750;
 
 // TODO: select an energy scaling value
-const double e0 = 0.00234451 * TMath::Power(140.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.4 (better)
-//const double e0 = 0.00170 * TMath::Power(141.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.5
-//const double e0 = 0.00632 * TMath::Power(141.*max_x/(7.5*nbins), 4); // value for 0-5% centrality He3Au at 200GeV, smearing of 0.5
+const double e0 = 0.00150022 * TMath::Power(140.*max_x/(5.*nbins), 4); // value for minbias pPb at 8TeV, smearing of 0.4 (better)
+
+//const double e0_init = 0.0009;
+//const double de0 = 0.0001;
 
 void Hist2Txt () {
   // inFile contains the histogram with the wounded nucleon distribution for all events.
-  TFile* inFile = new TFile(Form("outFile_%s.root", system.c_str()), "UPDATE");
+  TFile* inFile = new TFile(Form("outFile_%s_%i_%i.root", system.c_str(), firstEvent, lastEvent), "UPDATE");
   TFile* outRootFile = NULL;
 
   double max = 0; // for finding the maximum 
   for (int eventNum = firstEvent; eventNum < lastEvent; eventNum++) {
+    //e0 = (e0_init) + de0 * (int)((eventNum - firstEvent) / 100);
+    //cout << "event " << eventNum << ", e0=" << e0 << endl;
+
     TH2D* initedHist = (TH2D*)inFile->Get(Form("inited_event%i_translated", eventNum));
     initedHist->Scale (e0);
 

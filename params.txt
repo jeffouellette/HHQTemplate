@@ -11,7 +11,7 @@ TANORM		208
 NUMT		141
 //impact parameter. Not important if you're using Glauber.
 B		0
-// spatial lattice spacing in GeV^-1 for 141 bins, xmax=5fm (for example)
+// spatial lattice spacing in GeV^-1 for 140 bins, xmax=5fm (for example) - can check that 0.361979 / GeV = 10 fm / 140 * 5.0677 fm/GeV
 //AT		0.361979
 // temporal lattice spacing 
 EPS		0.001
