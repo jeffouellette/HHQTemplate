@@ -3,7 +3,7 @@ IC		-2
 //COLLISION parameters
 RNUC		6.6
 ANUC		0.55
-// nucleon-nucleon cross section. 72 at 8.16TeV, 42 at 200GeV. If you're using Glauber this shouldn't matter... best to change it anyways.
+// nucleon-nucleon cross section. 72 at 8.16TeV, 42 at 200GeV.
 SIGMANN		42
 //Atomic number of Nuclei (only symmetric collisions)
 TANORM		208
