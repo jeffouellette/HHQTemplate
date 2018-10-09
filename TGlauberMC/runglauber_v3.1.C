@@ -614,18 +614,22 @@ void runAndSmearNucleons(const Int_t n1,
   const double sigs = sigwidth;
   TF1* rad = new TF1("rad","x*TMath::Exp(-x*x/(2.*[0]*[0]))/(2*TMath::Pi()*[0]*[0])",0.0,3*sigs);
   rad->SetParameter(0,sigs);
-  TF2* smearing_function = new TF2("smear_tf2", "[0] * TMath::Exp(-(x*x+y*y)/(2*[1]*[1])", -25*sigs, 25*sigs, -25*sigs, 25*sigs);
+
+  // smearing_function is just a 2d normalized gaussian distribution centered at 0, 0
+  TF2* smearing_function = new TF2 ("smear_tf2", "[0]*TMath::Exp(-(x*x+y*y)/(2*[1]*[1]))", -25*sigs, 25*sigs, -25*sigs, 25*sigs);
   smearing_function->SetParameter(0, 1./(2.*TMath::Pi()*sigs*sigs)); // normalizes the gaussian
   smearing_function->SetParameter(1, sigs); // smearing width
 
-  const Int_t nbins = 140;
+  const Int_t nbins = 200;
   const Int_t nbinsx = nbins;
   const Int_t nbinsy = nbins;
-  const Double_t max_x = 5;
+  const Double_t max_x = 15;
 
-  for (Int_t ievent=n1; ievent<n2; ++ievent) {
+  for (Int_t ievent=0; ievent<n2; ++ievent) {
     //get an event with at least one collision
     while (!mcg->NextEvent()) {}
+
+    if (ievent < n1) continue;
 
     //access, save and (if wanted) print out nucleons
     TObjArray* nucleons=mcg->GetNucleons();
