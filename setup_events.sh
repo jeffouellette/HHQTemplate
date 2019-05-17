@@ -22,7 +22,7 @@ echo "InitialDir = $dir" >> submit_events.job
 echo "Error = $dir/log/job_\$(Process)/job_\$(Process).err" >> submit_events.job
 echo "Log = $dir/log/job_\$(Process)/job_\$(Process).log" >> submit_events.job
 echo "Output = $dir/log/job_\$(Process)/job_\$(Process).out" >> submit_events.job
-echo "Notify_user = $email" >> submit_events.job #TODO change me!!!
+#echo "Notify_user = $email" >> submit_events.job #TODO change me!!!
 echo "+Experiment = \"phenix\"" >> submit_events.job
 echo "+Job_Type = \"cas\"" >> submit_events.job
 
@@ -37,11 +37,11 @@ for (( i=${1}; ${i}<${2}; i++))
 do
   en=$(($i-$1))
 
-  cp -rn /sphenix/user/jouellette/HHQTemplate/inited_specified_template ./event$i
+  cp -rn /sphenix/user/jouellette/HHQTemplate/template ./event$i
   mkdir -p ./log/job_$en
 
   cd ./event$i
-  cp -n /direct/phenix+u/jouellette/TGlauberMC/initedFiles_${sys}/event$i.dat ./input/inited.dat #TODO change me!!!
+  cp -n /direct/phenix+u/jouellette/TGlauberMC/event$i.dat ./input/inited.dat #TODO change me!!! Hist2Txt should output some .dat files that 
   cp -n /direct/phenix+u/jouellette/TGlauberMC/initedFiles_${sys}/event$i.root ./quarkdist.root #TODO change me!!!
   cp -n /sphenix/user/jouellette/HHQTemplate/heavy_quark_pt.root ./ # if you have your own pT distribution, TODO change me too!!
   cd ../

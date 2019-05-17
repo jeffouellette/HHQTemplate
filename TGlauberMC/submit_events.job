@@ -1,0 +1,21 @@
+Universe = vanilla
+Notification = Complete
+Executable = /phenix/u/jouellette/TGlauberMC/condor_run.csh
+Requirements = CPU_Speed >= 1
+Rank = CPU_Speed
+Priority = +1
+GetEnv = False
+InitialDir = /phenix/u/jouellette/TGlauberMC/
+
+Error = errors/job$(Process).err
+Log = logs/job$(Process).log
+Output = outputs/job$(Process).out
+
+njobs = 16
+
+startevent = ( 100 * $(Process) )
+lastevent = ( 100 * ( $(Process) + 1 ) )
+
+Arguments = $INT(startevent) $INT(lastevent)
+
+Queue $(njobs)

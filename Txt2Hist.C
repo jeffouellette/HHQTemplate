@@ -33,10 +33,10 @@
 
 using namespace std;
 
-const int NGridX      = 200;   // # of x and y grid cells from hydro output
-const int NGridY      = 200; 
+const int NGridX      = 60;   // # of x and y grid cells from hydro output
+const int NGridY      = 60; 
 const double min_temp = 0.140;
-const double time_step_length_fm = 0.0071425; // timestep = (SNAPUPDATE * EPS * AT) / (5.0677 GeV^-1 / fm), e.g. here it is for 141 bins, xmax=5fm
+const double time_step_length_fm = 0.02; // timestep = (SNAPUPDATE * EPS * AT) / (5.0677 GeV^-1 / fm), e.g. here it is for 160 bins, xmax=6fm
 
 // ==================================================================================
 // CREATE HISTOGRAMS TO STORE THE KEY INFORMATION FROM EACH TIMESTEP
@@ -45,10 +45,10 @@ TH2D* htemperature[N_Histograms+1];
 TH2D* henergydensity[N_Histograms+1];
 TH2D* hbetax[N_Histograms+1];
 TH2D* hbetay[N_Histograms+1];
-TH1D* hheavypt[N_Histograms+1];
+//TH1D* hheavypt[N_Histograms+1];
 
 //Scale factor: the final histogram will have NSCALEFACTOR times more bins in X and Y than the input
-const int SCALEFACTOR = 4;
+const int SCALEFACTOR = 1;
 
 //Current canvas
 TCanvas *c_c;
@@ -62,7 +62,7 @@ TH2D *h_f_stage1;
 TH2D *h_f_stage2;
 
 //Momentum vectors
-TArrow *t_vec[141][141];
+//TArrow *t_vec[141][141];
 
 //Representation of a point in R^2
 struct point {
@@ -267,7 +267,8 @@ void smoothenHistogram()
 
 
 void SetStyle (TCanvas* c, TH2D* h) {
-  //gStyle->SetPalette(kRainBow);
+  gStyle->SetPalette(kRainBow);
+  gStyle->SetOptStat (0);
   c->SetWindowSize(800, 600);
   c->SetFillColor(kBlue + 3);
   c->SetTickx();
@@ -364,7 +365,7 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
   double tmin = 0.140;
 
   TFile* outFile;
-  outFile = new TFile ("nagle-hydro.root", "recreate");
+  outFile = new TFile ("hydroProfile.root", "update");
 
   // ==================================================================================
   // OPEN THE INPUT HYDRO ASCII FILES 
@@ -417,7 +418,7 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
   char hist_ed_name[200];
   char hist_betay_name[200];
   char hist_betax_name[200];
-  char hist_heavypt_name[200];
+  //char hist_heavypt_name[200];
 
   char canvas_name[200];
 
@@ -438,16 +439,14 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
   for (int itime=1; itime<=timesteps_to_run; itime++) {
 
     double xmax, ymax; // set maximum to extrema of grid
-    char fooc1name[1000];
-    sprintf(fooc1name,"canvas%d",itime-1);
-    sprintf(canvas_name,"c_time_%03d",itime);
-    sprintf(hist_temp_name,"h_temp_time_%03d",itime);
-    sprintf(hist_ed_name,"h_ed_time_%03d",itime);
-    sprintf(hist_betax_name,"h_betax_time_%03d",itime);
-    sprintf(hist_betay_name,"h_betay_time_%03d",itime);
-    sprintf(hist_heavypt_name,"h_heavypt_time_%03d",itime);
+    sprintf(canvas_name,"c_time_%03d_event_%i",itime, eventNum);
+    sprintf(hist_temp_name,"h_temp_time_%03d_event_%i",itime, eventNum);
+    sprintf(hist_ed_name,"h_ed_time_%03d_event_%i",itime, eventNum);
+    sprintf(hist_betax_name,"h_betax_time_%03d_event_%i",itime, eventNum);
+    sprintf(hist_betay_name,"h_betay_time_%03d_event_%i",itime, eventNum);
+    //sprintf(hist_heavypt_name,"h_heavypt_time_%03d",itime);
 
-    c1[itime-1] = new TCanvas(fooc1name,fooc1name,611,53,562,500);
+    c1[itime-1] = new TCanvas(canvas_name,canvas_name,611,53,562,500);
     c1[itime-1]->Range(-12.60663,-12.54642,13.83886,12.49337);
     c1[itime-1]->SetFillColor(0);
     c1[itime-1]->SetBorderMode(0);
@@ -464,15 +463,27 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
       file3 >> ED_name;
 
     string dummyLine;
-    
+
+
+    // READ COORDINATE EXTREMA FROM TEMPERATURE CONTOUR
     data1.open(T_name);
     getline(data1, dummyLine); // skips the first line (comments)
-    data1 >> xmax; // the first entry is the time so just do this twice to skip it
-    data1 >> xmax;
-    data1 >> ymax;
+
+    // The maximum value for x, y is in the last line so by construction these loops will only keep the last value
+    for(int ybin=1; ybin<=NGridY; ybin++) {
+      for(int xbin=1; xbin<=NGridX; xbin++) {
+        data1 >> xmax; // the first entry is the time so just do this twice to skip it
+        data1 >> xmax;
+        data1 >> ymax;
+        data1 >> temperature;
+      }
+    }
+
     if (xmax < 0) xmax *= -1;
     if (ymax < 0) ymax *= -1;
+
     data1.close();
+
     data1.open(T_name);
     getline(data1, dummyLine);
 
@@ -511,7 +522,7 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
     henergydensity[itime-1] = new TH2D(hist_ed_name, timeString.Data(), NGridX, -xmax, xmax, NGridY, -ymax, ymax);
     hbetax[itime-1] = new TH2D(hist_betax_name, timeString.Data(), NGridX, -xmax, xmax, NGridY, -ymax, ymax);
     hbetay[itime-1] = new TH2D(hist_betay_name, timeString.Data(), NGridX, -xmax, xmax, NGridY, -ymax, ymax);
-    hheavypt[itime-1] = new TH1D(hist_heavypt_name, timeString.Data(), 25, 0.0, 5.0);
+    //hheavypt[itime-1] = new TH1D(hist_heavypt_name, timeString.Data(), 25, 0.0, 5.0);
     
     // READ IN THE ENERGY DENSITY VALUES AND SET INTO 2D HISTOGRAM FOR THAT TIME STEP
     if (!noenergydensity) {
@@ -640,8 +651,8 @@ void Txt2Hist(int indexspecial=0, // index for collision system. 0-100=He^3-Au, 
       henergydensity[itime-1]->Write();
     hbetax[itime-1]->Write();
     hbetay[itime-1]->Write();
-    hheavypt[itime-1]->Write();
-    c1[itime-1]->Write();
+    //hheavypt[itime-1]->Write();
+    //c1[itime-1]->Write();
 
     if (h_f) delete h_f;
     if (h_f_stage1) delete h_f_stage1;

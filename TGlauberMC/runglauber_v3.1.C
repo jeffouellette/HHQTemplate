@@ -597,7 +597,7 @@ void runAndSmearNucleons(const Int_t n1,
   // Run Glauber and store smeared nucleon positions in a file.
   const Int_t n = n2 - n1;
 
-  TFile *out = TFile::Open(fname,"recreate",fname,9);
+  TFile *out = TFile::Open(fname,"recreate",fname,1);
   if (!out)
     return;
   TGlauberMC *mcg = new TGlauberMC(sysA, sysB, signn, sigwidth);
@@ -620,10 +620,10 @@ void runAndSmearNucleons(const Int_t n1,
   smearing_function->SetParameter(0, 1./(2.*TMath::Pi()*sigs*sigs)); // normalizes the gaussian
   smearing_function->SetParameter(1, sigs); // smearing width
 
-  const Int_t nbins = 200;
+  const Int_t nbins = 60;
   const Int_t nbinsx = nbins;
   const Int_t nbinsy = nbins;
-  const Double_t max_x = 15;
+  const Double_t max_x = 6;
 
   for (Int_t ievent=0; ievent<n2; ++ievent) {
     //get an event with at least one collision
@@ -635,7 +635,7 @@ void runAndSmearNucleons(const Int_t n1,
     TObjArray* nucleons=mcg->GetNucleons();
     if (!nucleons) 
       continue;
-    nucleons->Write(Form("nucleonarray%d",ievent),TObject::kSingleKey);
+    //nucleons->Write(Form("nucleonarray%d",ievent),TObject::kSingleKey);
 
     if (verbose) {
       cout<<endl<<endl<<"EVENT NO: "<<ievent<<endl;
@@ -669,6 +669,9 @@ void runAndSmearNucleons(const Int_t n1,
     Double_t sx2g       = 0;
     Double_t sy2g       = 0;
 
+    Double_t shiftX     = 0;
+    Double_t shiftY     = 0;
+
     for (Int_t s=0; s<NSAMP; ++s) {
       Int_t ni = 0;
       Double_t xvals[1000] = {0};
@@ -682,6 +685,11 @@ void runAndSmearNucleons(const Int_t n1,
         xvals[ni]   = nucleonA->GetX() + sr*TMath::Cos(sp);
         yvals[ni]   = nucleonA->GetY() + sr*TMath::Sin(sp);
         ++ni;
+
+        if (sysA == "p") {
+          shiftX = nucleonA->GetX ();
+          shiftY = nucleonA->GetY ();
+        }
       }
       for (Int_t i = 0; i<BN; ++i) {
         TGlauNucleon *nucleonB=(TGlauNucleon*)(nucleonsB->At(i));
@@ -761,32 +769,36 @@ void runAndSmearNucleons(const Int_t n1,
     v[i++] = sy2g/NSAMP;
     nt->Fill(v);
 
-    TH2D* inited_hist = new TH2D(Form("inited_event%i",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
-    for (Int_t ybin=1; ybin<=nbinsy; ybin++) {
-      const Double_t yval = inited_hist->GetYaxis()->GetBinCenter(ybin);
-      for (Int_t xbin=1; xbin<=nbinsx; xbin++) {
-        const Double_t xval = inited_hist->GetXaxis()->GetBinCenter(xbin);
-
-        long double content = 0.;
-        for (Int_t iNucl = 0; iNucl<nucleons->GetEntries(); iNucl++) {
-          TGlauNucleon *nucl=(TGlauNucleon *)nucleons->At(iNucl);
-          if (!nucl->IsWounded()) // skip non-wounded nucleons
-            continue;
-          content += smearing_function->Eval(nucl->GetX() - xval,
-                                             nucl->GetY() - yval);
-        }
-        inited_hist->SetBinContent(xbin, ybin, content);
-      }
-    }
-
     // shifts the collision so that the mean x and mean y are at the origin
-    const Double_t mean_x = inited_hist->GetMean(1);
-    const Double_t mean_y = inited_hist->GetMean(2);
-    TH2D* inited_hist_translated = new TH2D(Form("inited_event%i_translated",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
+    if (sysA != "p") {
+      TH2D* h_ed_uncentered = new TH2D(Form("h_ed_event%i_uncentered",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
+      for (Int_t ybin=1; ybin<=nbinsy; ybin++) {
+        const Double_t yval = h_ed_uncentered->GetYaxis()->GetBinCenter(ybin);
+        for (Int_t xbin=1; xbin<=nbinsx; xbin++) {
+          const Double_t xval = h_ed_uncentered->GetXaxis()->GetBinCenter(xbin);
+
+          long double content = 0.;
+          for (Int_t iNucl = 0; iNucl<nucleons->GetEntries(); iNucl++) {
+            TGlauNucleon *nucl=(TGlauNucleon *)nucleons->At(iNucl);
+            if (!nucl->IsWounded()) // skip non-wounded nucleons
+              continue;
+            content += smearing_function->Eval(nucl->GetX() - xval,
+                                               nucl->GetY() - yval);
+          }
+          h_ed_uncentered->SetBinContent(xbin, ybin, content);
+        }
+      }
+      shiftX = h_ed_uncentered->GetMean(1);
+      shiftY = h_ed_uncentered->GetMean(2);
+
+      delete h_ed_uncentered;
+    }
+
+    TH2D* h_ed = new TH2D(Form("h_ed_event%i",ievent), ";x;y;E [a.u.]", nbinsx, -max_x, max_x, nbinsy, -max_x, max_x);
     for (Int_t ybin=0; ybin<=nbinsy; ybin++) {
-      const Double_t yval = inited_hist_translated->GetYaxis()->GetBinCenter(ybin) + mean_y;
+      const Double_t yval = h_ed->GetYaxis()->GetBinCenter(ybin) + shiftY;
       for(Int_t xbin=0; xbin<=nbinsx; xbin++) {
-        const Double_t xval = inited_hist_translated->GetXaxis()->GetBinCenter(xbin) + mean_x;
+        const Double_t xval = h_ed->GetXaxis()->GetBinCenter(xbin) + shiftX;
 
         long double content = 0.;
         for (Int_t iNucl = 0; iNucl<nucleons->GetEntries(); iNucl++) {
@@ -796,13 +808,12 @@ void runAndSmearNucleons(const Int_t n1,
           content += smearing_function->Eval(nucl->GetX() - xval,
                                              nucl->GetY() - yval);
         }
-        inited_hist_translated->SetBinContent(xbin, ybin, content);
+        h_ed->SetBinContent(xbin, ybin, content);
       }
     }
 
-    inited_hist_translated->Write();
-    if (inited_hist) delete inited_hist;
-    if (inited_hist_translated) delete inited_hist_translated;
+    h_ed->Write();
+    if (h_ed) delete h_ed;
   }
 
   out->Write();

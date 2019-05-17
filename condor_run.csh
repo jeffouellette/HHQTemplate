@@ -71,7 +71,6 @@ endif
 
 ### Now run Txt2Hist
 set EVENTNUM=$2
-set EVENTNUMPLOT=$3
 set NUMFRAMES=0   # 0 tells the macro to process exactly the amount of frames that were saved
 set MAXTEMP=0.5
 
@@ -82,8 +81,9 @@ endif
 if ( ${RUN_Txt2Hist} == 1 ) then
   echo "Running Txt2Hist..."
   rm ./Txt2Hist.C
-  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/Txt2Hist.C ./Txt2Hist.C #TODO change the directory
-  root -l -b -q 'Txt2Hist.C (301, "data/snapshot/", "./", '${NUMFRAMES}', 0.140, true, '${EVENTNUMPLOT}', '${MAXTEMP}')' #> ${RUNDIR}/Txt2Hist.log # 301 gives p+Pb label
+  cp ${STARTDIR}/Txt2Hist.C ./Txt2Hist.C #TODO change the directory
+  cp ~/TGlauberMC/initedFiles_${SPC}/event${EVENTNUM}.root ./event${EVENTNUM}/hydroProfile.root #TODO change me!!!
+  root -l -b -q 'Txt2Hist.C (301, "data/snapshot/", "./", '${NUMFRAMES}', 0.140, true, '${EVENTNUM}')' #> ${RUNDIR}/Txt2Hist.log # 301 gives p+Pb label
   
   # move graphout files to their own directory
   mkdir -p graphout
@@ -97,7 +97,7 @@ endif
 if ( ${RUN_Diffusion} == 1 ) then
   echo "Running diffusion..."
   rm ./diffusion.C
-  cp /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/diffusion.C ./diffusion.C #TODO change the directory
+  cp ${STARTDIR}/diffusion.C ./diffusion.C #TODO change the directory
   cp -n /gpfs/mnt/gpfs04/sphenix/user/jouellette/${SPC}HydroRuns/hydroRuns/pPb8TeVHeavyQuarkPtSpectra.root ./heavy_quark_pt.root #TODO change the directory
   root -l -b -q 'diffusion.C ("nagle-hydro.root", "quarkdist.root", "inited_event'${EVENTNUM}'_translated", "heavy_quark_pt.root", false, 100000, 1000, "fout.root", '${EVENTNUM}')'
   echo "Completed diffusion."
